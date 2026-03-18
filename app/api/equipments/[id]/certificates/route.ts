@@ -15,7 +15,10 @@ export async function PATCH(
     const secret = process.env.JWT_SECRET;
     const decoded = jwt.verify(token, secret!) as { companyId: string, role: string };
 
-    const equipmentId = params.id;
+    // BUKA MATA LU DI BAGIAN INI. INI YANG BIKIN SISTEM LU GAGAL.
+    const resolvedParams = await params;
+    const equipmentId = resolvedParams.id;
+    
     const body = await request.json();
     const { certificateUrl } = body;
 
