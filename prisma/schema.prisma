@@ -1,0 +1,113 @@
+// prisma/schema.prisma
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+  shadowDatabaseUrl = env("SHADOW_DATABASE_URL")
+}
+
+// ==========================================
+// ENUMS (Standarisasi Nilai)
+// ==========================================
+
+enum Role {
+  SUPERADMIN // Untuk orang-orang PT. Marusindo
+  CLIENT     // Untuk klien seperti PT. Delta
+}
+
+enum EmailStatus {
+  PENDING
+  SENT
+  FAILED
+  BOUNCED
+}
+
+// ==========================================
+// MODELS
+// ==========================================
+
+model Company {
+  id          String   @id @default(uuid())
+  name        String   @unique
+  emailPic    String?  // Email utama untuk dikirimi peringatan expired
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  users       User[]
+  equipments  Equipment[]
+  emailLogs   EmailLog[]
+
+  @@map("companies")
+}
+
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  password  String   // Pastikan lo hash pakai bcrypt/argon2
+  role      Role     @default(CLIENT)
+  
+  // Relasi ke Company (Kunci Isolasi Data)
+  companyId String
+  company   Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Index untuk mempercepat query saat login
+  @@index([companyId])
+  @@map("users")
+}
+
+model Equipment {
+  id             String   @id @default(uuid())
+  
+  // Relasi ke Company (Milik Siapa Alat Ini?)
+  companyId      String
+  company        Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  
+  // Data Alat dari Excel
+  location       String?  // LOKASI (Bisa null karena di CSV lo ada yang kosong)
+  name           String   // ALAT
+  permitNumber   String?  // NOMOR IZIN
+  serialNumber   String?  // NOMOR SERIE
+  inspectionDate DateTime // TANGGAL PEMERIKSAAN
+  expiryDate     DateTime // TANGGAL HABIS
+  
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  emailLogs      EmailLog[]
+  certificateUrl String? @db.Text // Bisa nyimpan URL GDrive atau URL Gambar
+
+  @@index([companyId])
+  // INDEX INI WAJIB: Tanpa ini, cron job pencari jatuh tempo akan bikin server lambat
+  @@index([expiryDate]) 
+  @@map("equipments")
+  
+}
+
+model EmailLog {
+  id           String      @id @default(uuid())
+  
+  companyId    String
+  company      Company     @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  
+  equipmentId  String
+  equipment    Equipment   @relation(fields: [equipmentId], references: [id], onDelete: Cascade)
+  
+  status       EmailStatus @default(PENDING)
+  sentAt       DateTime?
+  errorMessage String?     @db.Text // Simpan log error dari layanan email (SendGrid/SMTP)
+  
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+
+  @@index([companyId])
+  @@index([status]) // Mempercepat query worker saat mencari email PENDING
+  @@map("email_logs")
+}
