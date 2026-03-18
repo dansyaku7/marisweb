@@ -1,5 +1,9 @@
+export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
+
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import nodemailer from 'nodemailer';
 import * as jwt from 'jsonwebtoken';
 import { cookies } from 'next/headers';
 
