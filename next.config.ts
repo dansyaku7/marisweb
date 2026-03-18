@@ -1,23 +1,22 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
   images: {
     remotePatterns: [
+      // ✅ Pisah jadi 2 object berbeda
       {
-        hostname: "res.cloudinary.com",
         protocol: "https",
-        hostname: '*.public.blob.vercel-storage.com'
+        hostname: "res.cloudinary.com",
+      },
+      {
+        protocol: "https",
+        hostname: '*.public.blob.vercel-storage.com',
       },
     ],
   },
 
-    // Untuk mengabaikan error ESLint
-  eslint: {
-    ignoreDuringBuilds: true,
-  },
-
-  // Untuk mengabaikan error TypeScript
+  // ✅ eslint dihapus, tidak support di Next.js 16
+  
   typescript: {
     ignoreBuildErrors: true,
   },
