@@ -365,8 +365,8 @@ export default function LoginPage() {
         .field-label {
           display: block;
           font-size: 12px;
-          font-weight: 800;
-          color: #4A4A45;
+          font-weight: 700;
+          color: #000000;
           text-transform: uppercase;
           letter-spacing: 0.1em;
           margin-bottom: 8px;
@@ -483,7 +483,7 @@ export default function LoginPage() {
           padding: 15px;
           font-family: 'Syne', sans-serif;
           font-size: 14px;
-          font-weight: 800;
+          font-weight: 700;
           color: #1A1A1A;
           letter-spacing: 0.04em;
           cursor: pointer;
@@ -525,7 +525,7 @@ export default function LoginPage() {
         }
         .form-footer-link {
           color: #C87A00;
-          font-weight: 800;
+          font-weight: 600;
           text-decoration: none;
         }
         .form-footer-link:hover { color: #E09800; text-decoration: underline; }
@@ -705,7 +705,7 @@ export default function LoginPage() {
               >
                 {isLoading
                   ? <Loader2 style={{ width: 18, height: 18, animation: 'spin 1s linear infinite' }} />
-                  : "Masuk ke Sistem →"
+                  : "Masuk →"
                 }
               </button>
             </form>

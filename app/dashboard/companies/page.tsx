@@ -294,7 +294,7 @@ export default function CompaniesPage() {
           font-weight: 500;
           text-transform: uppercase;
           letter-spacing: 0.1em;
-          color: #AAAAAA;
+          color: #000000;
           white-space: nowrap;
           background: #FAFAF7;
         }
@@ -304,14 +304,14 @@ export default function CompaniesPage() {
         .cp-table td { padding: 14px 20px; vertical-align: middle; }
 
         .cp-company-name { font-size: 13px; font-weight: 600; color: #1A1A1A; }
-        .cp-email-cell { display: flex; align-items: center; gap: 7px; font-size: 12px; font-weight: 400; color: #AAAAAA; font-family: monospace; }
+        .cp-email-cell { display: flex; align-items: center; gap: 7px; font-size: 12px; font-weight: 400; color: #000000; font-family: monospace; }
         .cp-unit-badge {
           display: inline-flex; align-items: center; justify-content: center;
           padding: 3px 10px;
           background: #F5F3EE;
           border: 1px solid #E8E4DC;
           border-radius: 999px;
-          font-size: 11px; font-weight: 400; color: #888880;
+          font-size: 11px; font-weight: 400; color: #000000;
         }
         .cp-status-active {
           display: inline-flex; align-items: center; gap: 5px;
@@ -327,7 +327,7 @@ export default function CompaniesPage() {
           border-radius: 999px;
           font-size: 10px; font-weight: 500; color: #DC3C3C; white-space: nowrap;
         }
-        .cp-date-cell { font-size: 12px; font-weight: 400; color: #BBBBBB; white-space: nowrap; font-family: monospace; }
+        .cp-date-cell { font-size: 12px; font-weight: 400; color: #000000; white-space: nowrap; font-family: monospace; }
 
         /* ---- ACTION BUTTONS ---- */
         .cp-action-cell { display: flex; align-items: center; justify-content: flex-end; gap: 6px; }

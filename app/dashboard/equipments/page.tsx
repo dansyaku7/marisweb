@@ -43,7 +43,10 @@ export default function EquipmentsPage() {
   const [newEq, setNewEq] = useState({ name: "", location: "", permitNumber: "", serialNumber: "", inspectionDate: "", expiryDate: "" });
   const [isSubmittingAdd, setIsSubmittingAdd] = useState(false);
   const [notifyingId, setNotifyingId] = useState<string | null>(null);
+  
   const [isNotifyingBulkAll, setIsNotifyingBulkAll] = useState(false);
+  // STATE BARU UNTUK MENYIMPAN ID ALAT YANG DICENTANG
+  const [selectedEqIds, setSelectedEqIds] = useState<string[]>([]);
 
   useEffect(() => {
     const storedUser = localStorage.getItem("userProfile");
@@ -56,7 +59,12 @@ export default function EquipmentsPage() {
   }, []);
 
   useEffect(() => {
-    if (selectedCompanyId) { fetchEquipments(selectedCompanyId); setSearchEqText(""); setCurrentPage(1); }
+    if (selectedCompanyId) { 
+      fetchEquipments(selectedCompanyId); 
+      setSearchEqText(""); 
+      setCurrentPage(1); 
+      setSelectedEqIds([]); // Reset pilihan saat ganti perusahaan
+    }
   }, [selectedCompanyId]);
 
   useEffect(() => { setCurrentPage(1); }, [searchEqText, searchCompanyText]);
@@ -172,6 +180,7 @@ export default function EquipmentsPage() {
       const res = await fetch(`/api/equipments/${id}`, { method: "DELETE" });
       if (!res.ok) throw new Error("Gagal menghapus data alat.");
       setStatusMsg({ type: "success", text: "Alat berhasil dihapus." }); fetchEquipments(selectedCompanyId);
+      setSelectedEqIds(prev => prev.filter(selectedId => selectedId !== id)); // Hapus dari state centang
     } catch (err: any) { setStatusMsg({ type: "error", text: err.message }); }
     finally { setDeletingId(null); }
   };
@@ -210,17 +219,11 @@ export default function EquipmentsPage() {
     finally { setNotifyingId(null); }
   };
 
-  const handleNotifyAllExpired = async () => {
-    if (!selectedCompanyId) return;
-    if (!confirm("Kirim email peringatan berisi SEMUA alat yang sudah expired ke klien ini?")) return;
-    setIsNotifyingBulkAll(true); setStatusMsg(null);
-    try {
-      const res = await fetch(`/api/companies/${selectedCompanyId}/notify-expired`, { method: "POST" });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.message || "Gagal mengirim notifikasi massal.");
-      setStatusMsg({ type: "success", text: data.message });
-    } catch (err: any) { setStatusMsg({ type: "error", text: err.message }); }
-    finally { setIsNotifyingBulkAll(false); }
+  // --- FUNGSI BARU UNTUK MULTI-SELECT CHECKBOX ---
+  const toggleSelectEq = (id: string) => {
+    setSelectedEqIds(prev => 
+      prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]
+    );
   };
 
   const filteredCompanies = companies.filter(c => c.name.toLowerCase().includes(searchCompanyText.toLowerCase()));
@@ -229,8 +232,47 @@ export default function EquipmentsPage() {
     const term = searchEqText.toLowerCase();
     return eq.name?.toLowerCase().includes(term) || eq.permitNumber?.toLowerCase().includes(term) || eq.serialNumber?.toLowerCase().includes(term);
   });
+  
   const totalPages = Math.ceil(filteredEquipments.length / itemsPerPage) || 1;
   const paginatedEquipments = filteredEquipments.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+
+  const toggleSelectAll = () => {
+    const currentPageIds = paginatedEquipments.map(eq => eq.id);
+    const allSelected = currentPageIds.every(id => selectedEqIds.includes(id));
+    
+    if (allSelected) {
+      setSelectedEqIds(prev => prev.filter(id => !currentPageIds.includes(id)));
+    } else {
+      const newSelections = currentPageIds.filter(id => !selectedEqIds.includes(id));
+      setSelectedEqIds(prev => [...prev, ...newSelections]);
+    }
+  };
+
+  // FUNGSI NOTIFY MASSAL YANG SUDAH TERINTEGRASI ARRAY ID
+  const handleNotifyBulk = async () => {
+    if (!selectedCompanyId) return;
+    
+    const isCustomSelection = selectedEqIds.length > 0;
+    const confirmMsg = isCustomSelection
+      ? `Kirim notifikasi untuk ${selectedEqIds.length} alat yang dipilih?`
+      : `Tidak ada alat yang dipilih. Kirim peringatan massal HANYA untuk alat yang kedaluwarsa?`;
+      
+    if (!confirm(confirmMsg)) return;
+
+    setIsNotifyingBulkAll(true); setStatusMsg(null);
+    try {
+      const res = await fetch(`/api/companies/${selectedCompanyId}/notify-expired`, { 
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ selectedIds: selectedEqIds })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || "Gagal mengirim notifikasi massal.");
+      setStatusMsg({ type: "success", text: data.message });
+      setSelectedEqIds([]); // Reset checklist setelah sukses
+    } catch (err: any) { setStatusMsg({ type: "error", text: err.message }); }
+    finally { setIsNotifyingBulkAll(false); }
+  };
 
   const inputStyle: React.CSSProperties = {
     width: "100%", padding: "10px 14px",
@@ -423,15 +465,18 @@ export default function EquipmentsPage() {
                   {selectedCompany && <span className="eq-selected-tag">{selectedCompany.name}</span>}
                   <input type="file" ref={fileInputRef} accept=".xlsx,.xls,.csv" onChange={handleFileUpload} style={{ display: "none" }} />
                   {userRole === "SUPERADMIN" && (
-                    <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                    <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
                       <button className="eq-tool-btn amber" onClick={() => setIsAddModalOpen(true)} disabled={!selectedCompanyId}>
                         <Plus size={13} /> Tambah Manual
                       </button>
                       <button className="eq-tool-btn amber" onClick={() => fileInputRef.current?.click()} disabled={!selectedCompanyId || isUploading}>
                         {isUploading ? <Loader2 size={13} className="eq-spinner" /> : <FileUp size={13} />} Import File
                       </button>
-                      <button className="eq-tool-btn red" onClick={handleNotifyAllExpired} disabled={!selectedCompanyId || isNotifyingBulkAll}>
-                        {isNotifyingBulkAll ? <Loader2 size={13} className="eq-spinner" /> : <MailWarning size={13} />} Alert Expired
+                      
+                      {/* TOMBOL YANG SUDAH TERHUBUNG DENGAN ARRAY CHECKBOX */}
+                      <button className="eq-tool-btn red" onClick={handleNotifyBulk} disabled={!selectedCompanyId || isNotifyingBulkAll}>
+                        {isNotifyingBulkAll ? <Loader2 size={13} className="eq-spinner" /> : <MailWarning size={13} />} 
+                        {selectedEqIds.length > 0 ? `Kirim ${selectedEqIds.length} Pilihan` : "Alert Expired"}
                       </button>
                     </div>
                   )}
@@ -459,6 +504,15 @@ export default function EquipmentsPage() {
                     <table className="eq-table">
                       <thead>
                         <tr>
+                          {/* CHECKBOX: SELECT ALL (HEADER) */}
+                          <th style={{ width: 40, paddingRight: 0, textAlign: "center" }}>
+                            <input 
+                              type="checkbox" 
+                              style={{ cursor: "pointer", accentColor: "#F0A500" }}
+                              checked={paginatedEquipments.length > 0 && paginatedEquipments.every(eq => selectedEqIds.includes(eq.id))}
+                              onChange={toggleSelectAll}
+                            />
+                          </th>
                           <th>Informasi Alat</th>
                           <th>Inspeksi & Izin</th>
                           <th style={{ textAlign: "right" }}>Status Waktu</th>
@@ -469,8 +523,19 @@ export default function EquipmentsPage() {
                         {paginatedEquipments.map((eq) => {
                           const status = getStatus(eq.expiryDate);
                           const StatusIcon = status.icon;
+                          const isSelected = selectedEqIds.includes(eq.id);
+                          
                           return (
-                            <tr key={eq.id}>
+                            <tr key={eq.id} style={{ background: isSelected ? "#FDFCF8" : "transparent" }}>
+                              {/* CHECKBOX: SELECT SINGLE (BARIS) */}
+                              <td style={{ width: 40, paddingRight: 0, textAlign: "center" }}>
+                                <input 
+                                  type="checkbox" 
+                                  style={{ cursor: "pointer", accentColor: "#F0A500" }}
+                                  checked={isSelected}
+                                  onChange={() => toggleSelectEq(eq.id)}
+                                />
+                              </td>
                               <td>
                                 <p className="eq-eq-name">{eq.name}</p>
                                 <p className="eq-eq-loc">Lokasi: {eq.location || "N/A"}</p>

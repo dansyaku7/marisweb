@@ -31,7 +31,19 @@ export async function POST(
     const resolvedParams = await params;
     const companyId = resolvedParams.id;
 
-    // 1. Tarik Data Perusahaan
+    // 1. Tangkap Payload Secara Defensif
+    // Kalau frontend nggak ngirim body (null/kosong), block try-catch ini menyelamatkan API lu dari crash 400 Bad Request.
+    let selectedIds: string[] = [];
+    try {
+      const body = await request.json();
+      if (body.selectedIds && Array.isArray(body.selectedIds)) {
+        selectedIds = body.selectedIds;
+      }
+    } catch (e) {
+      selectedIds = [];
+    }
+
+    // 2. Tarik Data Perusahaan
     const company = await prisma.company.findUnique({
       where: { id: companyId }
     });
@@ -40,74 +52,113 @@ export async function POST(
       return NextResponse.json({ message: 'Perusahaan tidak ditemukan atau Email PIC kosong' }, { status: 404 });
     }
 
-    // 2. Tarik Semua Alat yang Sudah Expired (Sisa waktu <= 0)
+    // 3. Bangun Query Database Dinamis
     const now = new Date();
     now.setHours(0, 0, 0, 0);
 
+    const whereClause: any = { companyId: companyId };
+    
+    // STRATEGI INTI:
+    // Jika ada ID yang dicentang, cari spesifik ID tersebut.
+    // Jika array kosong, default ambil SEMUA yang sudah expired.
+    if (selectedIds.length > 0) {
+      whereClause.id = { in: selectedIds };
+    } else {
+      whereClause.expiryDate = { lte: now };
+    }
+
     const equipments = await prisma.equipment.findMany({
-      where: {
-        companyId: companyId,
-        expiryDate: { lte: now } // Ambil yang tanggal expired-nya hari ini atau sebelumnya
-      }
+      where: whereClause,
+      orderBy: { expiryDate: 'asc' } // Urutkan dari yang paling kritis
     });
 
     if (equipments.length === 0) {
-      return NextResponse.json({ message: 'Tidak ada alat yang kedaluwarsa untuk perusahaan ini.' }, { status: 400 });
+      const errorMsg = selectedIds.length > 0 
+        ? 'Data alat yang dipilih tidak valid atau sudah dihapus.' 
+        : 'Tidak ada alat yang kedaluwarsa untuk perusahaan ini.';
+      return NextResponse.json({ message: errorMsg }, { status: 400 });
     }
 
-    // 3. Susun Email
+    // 4. Susun Baris Tabel HTML
     const rows = equipments.map(eq => {
       const expDate = new Date(eq.expiryDate);
       expDate.setHours(0, 0, 0, 0);
       const diffDays = Math.ceil((expDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
       
+      let statusHtml = '';
+      if (diffDays < 0) {
+        statusHtml = `<span style="color: #ef4444; font-weight: bold;">KEDALUWARSA (Lewat ${Math.abs(diffDays)} Hr)</span>`;
+      } else if (diffDays <= 60) {
+        statusHtml = `<span style="color: #f59e0b; font-weight: bold;">WARNING (Sisa ${diffDays} Hr)</span>`;
+      } else {
+        statusHtml = `<span style="color: #22c55e; font-weight: bold;">AMAN (Sisa ${diffDays} Hr)</span>`;
+      }
+
       return `
-        <tr style="border-bottom: 1px solid #eee;">
-          <td style="padding: 10px;">${eq.name}</td>
-          <td style="padding: 10px;">${eq.permitNumber}</td>
-          <td style="padding: 10px; font-weight: bold; color: #ef4444;">
-            ${diffDays === 0 ? 'KEDALUWARSA HARI INI' : `LEWAT ${Math.abs(diffDays)} HARI`}
-          </td>
+        <tr style="border-bottom: 1px solid #e2e8f0;">
+          <td style="padding: 12px 10px; color: #1e293b; font-weight: 500;">${eq.name}</td>
+          <td style="padding: 12px 10px; color: #475569;">${eq.permitNumber}</td>
+          <td style="padding: 12px 10px; color: #475569;">${expDate.toLocaleDateString('id-ID')}</td>
+          <td style="padding: 12px 10px;">${statusHtml}</td>
         </tr>
       `;
     }).join('');
 
+    // 5. Sesuaikan Narasi Email Berdasarkan Konteks
+    const isCustomSelection = selectedIds.length > 0;
+    const emailSubject = isCustomSelection 
+      ? `[PERHATIAN] Status Spesifik Peralatan Anda - ${company.name}`
+      : `[PEMBERITAHUAN] Rekap Alat Kedaluwarsa - ${company.name}`;
+      
+    const emailHeaderBg = isCustomSelection ? '#f0f9ff' : '#fef2f2';
+    const emailHeaderColor = isCustomSelection ? '#0369a1' : '#b91c1c';
+    const emailTitle = isCustomSelection ? 'M-Track Equipment Status Update' : 'M-Track Manual Alert';
+    const emailDesc = isCustomSelection
+      ? `Berikut adalah pembaruan status untuk <strong>${equipments.length} peralatan spesifik</strong> yang Anda miliki di database kami:`
+      : 'Secara manual, Admin menginformasikan bahwa peralatan berikut <strong>telah habis masa berlakunya</strong>:';
+
+    // 6. Eksekusi Pengiriman Email
     await transporter.sendMail({
       from: `"M-Track Marusindo" <${process.env.SMTP_USER}>`,
       to: company.emailPic,
-      subject: `[PEMBERITAHUAN MANUAL] Rekap Alat Kedaluwarsa - ${company.name}`,
+      subject: emailSubject,
       html: `
-        <div style="font-family: sans-serif; max-width: 600px; border: 1px solid #e5e7eb; border-radius: 12px; overflow: hidden;">
-          <div style="background-color: #fef2f2; padding: 20px; border-bottom: 1px solid #fecaca;">
-            <h2 style="margin: 0; color: #b91c1c;">M-Track Manual Alert</h2>
+        <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 650px; border: 1px solid #cbd5e1; border-radius: 12px; overflow: hidden; background-color: #ffffff;">
+          <div style="background-color: ${emailHeaderBg}; padding: 24px; border-bottom: 1px solid #cbd5e1;">
+            <h2 style="margin: 0; color: ${emailHeaderColor}; font-size: 20px;">${emailTitle}</h2>
           </div>
           <div style="padding: 24px;">
-            <p>Halo <strong>${company.name}</strong>,</p>
-            <p>Admin PT. Marusindo secara manual mengirimkan rekapitulasi peralatan Anda yang <strong>telah habis masa berlakunya</strong>:</p>
-            <table style="width: 100%; border-collapse: collapse; margin: 20px 0;">
+            <p style="color: #334155; font-size: 15px;">Halo <strong>${company.name}</strong>,</p>
+            <p style="color: #475569; font-size: 14px; line-height: 1.6;">${emailDesc}</p>
+            
+            <table style="width: 100%; border-collapse: collapse; margin: 24px 0; border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden;">
               <thead>
-                <tr style="background-color: #f1f5f9; text-align: left; font-size: 12px; color: #64748b;">
-                  <th style="padding: 10px;">ALAT</th>
-                  <th style="padding: 10px;">NO. IZIN</th>
-                  <th style="padding: 10px;">STATUS</th>
+                <tr style="background-color: #f8fafc; text-align: left; font-size: 12px; color: #64748b; letter-spacing: 0.05em; text-transform: uppercase;">
+                  <th style="padding: 12px 10px; border-bottom: 2px solid #e2e8f0;">Nama Alat</th>
+                  <th style="padding: 12px 10px; border-bottom: 2px solid #e2e8f0;">No. Izin</th>
+                  <th style="padding: 12px 10px; border-bottom: 2px solid #e2e8f0;">Exp. Date</th>
+                  <th style="padding: 12px 10px; border-bottom: 2px solid #e2e8f0;">Status</th>
                 </tr>
               </thead>
               <tbody>${rows}</tbody>
             </table>
-            <p style="font-size: 14px; color: #475569;">Alat-alat ini ilegal untuk dioperasikan sebelum diinspeksi ulang.</p>
+            
+            <p style="font-size: 13px; color: #64748b; margin-top: 30px; padding-top: 20px; border-top: 1px solid #e2e8f0;">
+              Catatan: Alat yang berstatus <strong>KEDALUWARSA</strong> berisiko secara hukum dan keselamatan kerja jika dioperasikan sebelum inspeksi ulang dilakukan.
+            </p>
           </div>
         </div>
       `,
     });
 
-    // 4. Catat ke Log Audit
+    // 7. Catat ke Log Audit
     for (const eq of equipments) {
       await prisma.emailLog.create({
         data: { companyId, equipmentId: eq.id, status: 'SENT', sentAt: new Date() }
       });
     }
 
-    return NextResponse.json({ message: `Berhasil mengirim email berisi ${equipments.length} alat kedaluwarsa.` }, { status: 200 });
+    return NextResponse.json({ message: `Berhasil mengirim notifikasi untuk ${equipments.length} alat ke Klien.` }, { status: 200 });
 
   } catch (error: any) {
     console.error('[MANUAL BULK NOTIFY ERROR]:', error);

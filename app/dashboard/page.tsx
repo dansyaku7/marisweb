@@ -413,7 +413,7 @@ export default function DashboardPage() {
           {/* ---- URGENT TABLE ---- */}
           <div className="db-card db-table-anim">
             <div className="db-card-header">
-              <h3 className="db-card-title">Top 5 Alat Paling Kritis</h3>
+              <h3 className="db-card-title">Alat-alat butuh pembaruan</h3>
               <Link href="/dashboard/equipments" className="db-card-link">
                 Lihat Semua Data <ArrowRight size={14} />
               </Link>
