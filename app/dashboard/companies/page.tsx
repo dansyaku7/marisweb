@@ -21,26 +21,22 @@ export default function CompaniesPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
-  // Create Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
   const [formData, setFormData] = useState({ name: "", emailPic: "", password: "" });
 
-  // Edit Modal State
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [editTarget, setEditTarget] = useState<Company | null>(null);
   const [editData, setEditData] = useState({ name: "", emailPic: "", isActive: true });
   const [isEditSubmitting, setIsEditSubmitting] = useState(false);
   const [editError, setEditError] = useState<string | null>(null);
 
-  // Delete Modal State
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<Company | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
 
-  // 1. Fungsi Tarik Data dari API
   const fetchCompanies = async () => {
     setIsLoading(true);
     setErrorMsg(null);
@@ -58,7 +54,6 @@ export default function CompaniesPage() {
 
   useEffect(() => { fetchCompanies(); }, []);
 
-  // 2. Fungsi Submit Form Buat Perusahaan Baru
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
@@ -81,7 +76,6 @@ export default function CompaniesPage() {
     }
   };
 
-  // 3. Buka Edit Modal
   const openEdit = (company: Company) => {
     setEditTarget(company);
     setEditData({ name: company.name, emailPic: company.emailPic, isActive: company.isActive });
@@ -89,7 +83,6 @@ export default function CompaniesPage() {
     setIsEditOpen(true);
   };
 
-  // 4. Submit Edit
   const handleEdit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editTarget) return;
@@ -113,14 +106,12 @@ export default function CompaniesPage() {
     }
   };
 
-  // 5. Buka Delete Modal
   const openDelete = (company: Company) => {
     setDeleteTarget(company);
     setDeleteError(null);
     setIsDeleteOpen(true);
   };
 
-  // 6. Confirm Delete
   const handleDelete = async () => {
     if (!deleteTarget) return;
     setIsDeleting(true);
@@ -142,10 +133,8 @@ export default function CompaniesPage() {
   return (
     <>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800;900&family=DM+Mono:wght@400;500&display=swap');
-
         .cp-root * { box-sizing: border-box; }
-        .cp-root { font-family: 'Syne', sans-serif; }
+        .cp-root { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
 
         @keyframes cp-fadeup {
           from { opacity: 0; transform: translateY(12px); }
@@ -153,7 +142,7 @@ export default function CompaniesPage() {
         }
         @keyframes cp-spin { to { transform: rotate(360deg); } }
         @keyframes cp-modal-in {
-          from { opacity: 0; transform: scale(0.95) translateY(8px); }
+          from { opacity: 0; transform: scale(0.96) translateY(8px); }
           to   { opacity: 1; transform: scale(1) translateY(0); }
         }
 
@@ -176,36 +165,36 @@ export default function CompaniesPage() {
           margin-bottom: 32px;
         }
         .cp-eyebrow {
-          font-family: 'DM Mono', monospace;
           font-size: 10px;
-          color: #C8F135;
+          font-weight: 500;
+          color: #C87A00;
           text-transform: uppercase;
-          letter-spacing: 0.15em;
+          letter-spacing: 0.14em;
           margin-bottom: 8px;
         }
         .cp-page-title {
-          font-size: clamp(20px, 3.5vw, 28px);
+          font-size: clamp(20px, 3.5vw, 26px);
           font-weight: 700;
-          color: #F0F0F0;
+          color: #1A1A1A;
           margin: 0 0 6px 0;
-          line-height: 1.1;
+          line-height: 1.15;
           display: flex;
           align-items: center;
           gap: 12px;
         }
         .cp-title-icon {
           width: 36px; height: 36px;
-          background: rgba(200,241,53,0.08);
-          border: 1px solid rgba(200,241,53,0.15);
+          background: rgba(240,165,0,0.08);
+          border: 1.5px solid rgba(240,165,0,0.18);
           border-radius: 10px;
           display: flex; align-items: center; justify-content: center;
-          color: #C8F135;
+          color: #C87A00;
           flex-shrink: 0;
         }
         .cp-page-desc {
           font-size: 13px;
           font-weight: 400;
-          color: #444;
+          color: #AAAAAA;
           margin: 0;
           max-width: 520px;
           line-height: 1.6;
@@ -215,119 +204,130 @@ export default function CompaniesPage() {
           align-items: center;
           gap: 8px;
           padding: 11px 20px;
-          background: #C8F135;
+          background: #F0A500;
           border: none;
           border-radius: 10px;
-          font-family: 'Syne', sans-serif;
+          font-family: inherit;
           font-size: 13px;
-          font-weight: 700;
-          color: #0A0A0A;
+          font-weight: 600;
+          color: #1A1A1A;
           cursor: pointer;
           white-space: nowrap;
           transition: background 0.2s, transform 0.15s, box-shadow 0.2s;
-          box-shadow: 0 0 20px rgba(200,241,53,0.12);
+          box-shadow: 0 4px 16px rgba(240,165,0,0.2);
         }
-        .cp-add-btn:hover { background: #D4F542; transform: translateY(-1px); box-shadow: 0 6px 24px rgba(200,241,53,0.2); }
+        .cp-add-btn:hover { background: #E09800; transform: translateY(-1px); box-shadow: 0 6px 24px rgba(240,165,0,0.28); }
         .cp-add-btn:active { transform: translateY(0); }
 
         .cp-divider {
           height: 1px;
-          background: linear-gradient(90deg, #C8F135 0%, transparent 60%);
+          background: linear-gradient(90deg, #F0A500 0%, transparent 60%);
           margin-bottom: 28px;
-          opacity: 0.1;
+          opacity: 0.2;
         }
         .cp-error-bar {
           display: flex;
           align-items: center;
           gap: 10px;
-          background: rgba(248,113,113,0.07);
-          border: 1px solid rgba(248,113,113,0.2);
+          background: rgba(220,60,60,0.06);
+          border: 1px solid rgba(220,60,60,0.15);
           border-radius: 10px;
           padding: 14px 16px;
           margin-bottom: 24px;
           font-size: 13px;
-          font-weight: 500;
-          color: #F87171;
+          font-weight: 400;
+          color: #DC3C3C;
         }
 
         /* ---- TABLE CARD ---- */
-        .cp-table-card { background: #111; border: 1px solid #1C1C1C; border-radius: 16px; overflow: hidden; }
+        .cp-table-card {
+          background: #FFFFFF;
+          border: 1.5px solid #E8E4DC;
+          border-radius: 16px;
+          overflow: hidden;
+          box-shadow: 0 2px 16px rgba(0,0,0,0.05);
+        }
         .cp-toolbar {
           display: flex;
           align-items: center;
           justify-content: space-between;
           gap: 12px;
           padding: 14px 20px;
-          border-bottom: 1px solid #181818;
-          background: #0D0D0D;
+          border-bottom: 1px solid #F0EDE4;
+          background: #FAFAF7;
           flex-wrap: wrap;
         }
         .cp-search-wrap { position: relative; flex: 1; min-width: 180px; max-width: 360px; }
-        .cp-search-icon { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: #333; pointer-events: none; }
+        .cp-search-icon { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: #BBBBBB; pointer-events: none; }
         .cp-search-input {
           width: 100%;
           padding: 9px 14px 9px 36px;
-          background: #141414;
-          border: 1px solid #222;
+          background: #FFFFFF;
+          border: 1.5px solid #E5E2D8;
           border-radius: 8px;
-          font-family: 'Syne', sans-serif;
+          font-family: inherit;
           font-size: 13px;
-          color: #D0D0D0;
+          font-weight: 400;
+          color: #1A1A1A;
           outline: none;
           transition: border-color 0.2s, box-shadow 0.2s;
-          caret-color: #C8F135;
+          caret-color: #F0A500;
         }
-        .cp-search-input::placeholder { color: #2D2D2D; }
-        .cp-search-input:focus { border-color: rgba(200,241,53,0.3); box-shadow: 0 0 0 3px rgba(200,241,53,0.06); }
+        .cp-search-input::placeholder { color: #CCCCCC; }
+        .cp-search-input:focus { border-color: rgba(240,165,0,0.35); box-shadow: 0 0 0 3px rgba(240,165,0,0.08); }
 
-        .cp-total-badge { font-family: 'DM Mono', monospace; font-size: 10px; color: #333; text-transform: uppercase; letter-spacing: 0.12em; white-space: nowrap; }
-        .cp-total-badge strong { color: #C8F135; font-weight: 500; }
+        .cp-total-badge {
+          font-size: 11px;
+          font-weight: 400;
+          color: #AAAAAA;
+          text-transform: uppercase;
+          letter-spacing: 0.1em;
+          white-space: nowrap;
+        }
+        .cp-total-badge strong { color: #C87A00; font-weight: 600; }
 
         .cp-table { width: 100%; border-collapse: collapse; text-align: left; }
-        .cp-table thead tr { border-bottom: 1px solid #181818; }
+        .cp-table thead tr { border-bottom: 1px solid #F0EDE4; }
         .cp-table thead th {
           padding: 12px 20px;
-          font-family: 'DM Mono', monospace;
-          font-size: 9px;
-          text-transform: uppercase;
-          letter-spacing: 0.14em;
-          color: #2D2D2D;
+          font-size: 10px;
           font-weight: 500;
+          text-transform: uppercase;
+          letter-spacing: 0.1em;
+          color: #AAAAAA;
           white-space: nowrap;
-          background: #0D0D0D;
+          background: #FAFAF7;
         }
-        .cp-table tbody tr { border-bottom: 1px solid #161616; transition: background 0.15s; }
+        .cp-table tbody tr { border-bottom: 1px solid #F5F3EE; transition: background 0.15s; }
         .cp-table tbody tr:last-child { border-bottom: none; }
-        .cp-table tbody tr:hover { background: #141414; }
-        .cp-table td { padding: 13px 20px; vertical-align: middle; }
+        .cp-table tbody tr:hover td { background: #FDFCF8; }
+        .cp-table td { padding: 14px 20px; vertical-align: middle; }
 
-        /* Cell styles — weight 400–600 only */
-        .cp-company-name { font-size: 13px; font-weight: 600; color: #C0C0C0; }
-        .cp-email-cell { display: flex; align-items: center; gap: 8px; font-family: 'DM Mono', monospace; font-size: 11px; font-weight: 400; color: #3A3A3A; }
+        .cp-company-name { font-size: 13px; font-weight: 600; color: #1A1A1A; }
+        .cp-email-cell { display: flex; align-items: center; gap: 7px; font-size: 12px; font-weight: 400; color: #AAAAAA; font-family: monospace; }
         .cp-unit-badge {
           display: inline-flex; align-items: center; justify-content: center;
-          padding: 4px 10px;
-          background: rgba(255,255,255,0.03);
-          border: 1px solid #1E1E1E;
+          padding: 3px 10px;
+          background: #F5F3EE;
+          border: 1px solid #E8E4DC;
           border-radius: 999px;
-          font-family: 'DM Mono', monospace;
-          font-size: 11px; font-weight: 400; color: #444;
+          font-size: 11px; font-weight: 400; color: #888880;
         }
         .cp-status-active {
           display: inline-flex; align-items: center; gap: 5px;
-          padding: 4px 10px;
-          background: rgba(52,211,153,0.07); border: 1px solid rgba(52,211,153,0.15);
+          padding: 3px 10px;
+          background: rgba(34,160,100,0.07); border: 1px solid rgba(34,160,100,0.18);
           border-radius: 999px;
-          font-family: 'DM Mono', monospace; font-size: 10px; font-weight: 400; color: #34D399; white-space: nowrap;
+          font-size: 10px; font-weight: 500; color: #22A064; white-space: nowrap;
         }
         .cp-status-suspend {
           display: inline-flex; align-items: center; gap: 5px;
-          padding: 4px 10px;
-          background: rgba(248,113,113,0.07); border: 1px solid rgba(248,113,113,0.15);
+          padding: 3px 10px;
+          background: rgba(220,60,60,0.06); border: 1px solid rgba(220,60,60,0.15);
           border-radius: 999px;
-          font-family: 'DM Mono', monospace; font-size: 10px; font-weight: 400; color: #F87171; white-space: nowrap;
+          font-size: 10px; font-weight: 500; color: #DC3C3C; white-space: nowrap;
         }
-        .cp-date-cell { font-family: 'DM Mono', monospace; font-size: 11px; font-weight: 400; color: #333; white-space: nowrap; }
+        .cp-date-cell { font-size: 12px; font-weight: 400; color: #BBBBBB; white-space: nowrap; font-family: monospace; }
 
         /* ---- ACTION BUTTONS ---- */
         .cp-action-cell { display: flex; align-items: center; justify-content: flex-end; gap: 6px; }
@@ -335,165 +335,166 @@ export default function CompaniesPage() {
           display: flex; align-items: center; justify-content: center;
           width: 30px; height: 30px;
           border-radius: 7px;
-          background: rgba(255,255,255,0.03);
-          border: 1px solid #1E1E1E;
-          color: #3A3A3A;
+          background: #F5F3EE;
+          border: 1.5px solid #E5E2D8;
+          color: #AAAAAA;
           cursor: pointer;
           transition: background 0.15s, color 0.15s, border-color 0.15s;
         }
-        .cp-btn-edit:hover { background: rgba(200,241,53,0.07); border-color: rgba(200,241,53,0.2); color: #C8F135; }
+        .cp-btn-edit:hover { background: rgba(240,165,0,0.08); border-color: rgba(240,165,0,0.25); color: #C87A00; }
         .cp-btn-delete {
           display: flex; align-items: center; justify-content: center;
           width: 30px; height: 30px;
           border-radius: 7px;
-          background: rgba(255,255,255,0.03);
-          border: 1px solid #1E1E1E;
-          color: #3A2020;
+          background: #F5F3EE;
+          border: 1.5px solid #E5E2D8;
+          color: #CCCCCC;
           cursor: pointer;
           transition: background 0.15s, color 0.15s, border-color 0.15s;
         }
-        .cp-btn-delete:hover { background: rgba(248,113,113,0.08); border-color: rgba(248,113,113,0.2); color: #F87171; }
+        .cp-btn-delete:hover { background: rgba(220,60,60,0.07); border-color: rgba(220,60,60,0.18); color: #DC3C3C; }
 
         /* Empty / loading */
         .cp-empty-cell { padding: 64px 20px; text-align: center; }
         .cp-empty-icon {
           width: 52px; height: 52px;
-          background: rgba(255,255,255,0.03); border: 1px solid #1E1E1E; border-radius: 14px;
+          background: #F5F3EE; border: 1.5px solid #E5E2D8; border-radius: 14px;
           display: flex; align-items: center; justify-content: center;
-          margin: 0 auto 16px; color: #2A2A2A;
+          margin: 0 auto 16px; color: #CCCCCC;
         }
-        .cp-empty-title { font-size: 14px; font-weight: 600; color: #333; margin: 0 0 6px 0; }
-        .cp-empty-desc  { font-size: 12px; font-weight: 400; color: #2D2D2D; margin: 0; }
+        .cp-empty-title { font-size: 14px; font-weight: 600; color: #555; margin: 0 0 6px 0; }
+        .cp-empty-desc  { font-size: 12px; font-weight: 400; color: #AAAAAA; margin: 0; }
         .cp-spinner { animation: cp-spin 1s linear infinite; }
 
         /* ---- SHARED MODAL ---- */
         .cp-modal-overlay { position: fixed; inset: 0; z-index: 100; display: flex; align-items: center; justify-content: center; padding: 20px; }
-        .cp-modal-bg { position: absolute; inset: 0; background: rgba(0,0,0,0.78); backdrop-filter: blur(8px); }
+        .cp-modal-bg { position: absolute; inset: 0; background: rgba(0,0,0,0.25); backdrop-filter: blur(6px); }
         .cp-modal {
-          position: relative; background: #111; border: 1px solid #1E1E1E; border-radius: 20px;
+          position: relative; background: #FFFFFF; border: 1.5px solid #EAE7DF; border-radius: 20px;
           width: 100%; max-width: 480px; overflow: hidden;
-          box-shadow: 0 32px 64px rgba(0,0,0,0.7);
+          box-shadow: 0 24px 60px rgba(0,0,0,0.12);
           animation: cp-modal-in 0.2s ease both;
         }
         .cp-modal-sm {
-          position: relative; background: #111; border: 1px solid #1E1E1E; border-radius: 20px;
+          position: relative; background: #FFFFFF; border: 1.5px solid #EAE7DF; border-radius: 20px;
           width: 100%; max-width: 360px; overflow: hidden;
-          box-shadow: 0 32px 64px rgba(0,0,0,0.7);
+          box-shadow: 0 24px 60px rgba(0,0,0,0.12);
           animation: cp-modal-in 0.2s ease both;
         }
         .cp-modal-header {
           padding: 20px 24px 18px;
-          border-bottom: 1px solid #181818;
-          background: #0D0D0D;
+          border-bottom: 1px solid #F0EDE4;
+          background: #FAFAF7;
           display: flex; align-items: center; justify-content: space-between;
         }
-        .cp-modal-title { font-size: 16px; font-weight: 700; color: #E0E0E0; margin: 0 0 3px 0; }
-        .cp-modal-subtitle { font-size: 12px; font-weight: 400; color: #3A3A3A; margin: 0; }
+        .cp-modal-title { font-size: 15px; font-weight: 700; color: #1A1A1A; margin: 0 0 3px 0; }
+        .cp-modal-subtitle { font-size: 12px; font-weight: 400; color: #AAAAAA; margin: 0; }
         .cp-modal-close {
           width: 28px; height: 28px;
-          background: #161616; border: 1px solid #222; border-radius: 7px;
+          background: #F0EDE4; border: 1.5px solid #E5E2D8; border-radius: 7px;
           display: flex; align-items: center; justify-content: center;
-          color: #444; cursor: pointer; flex-shrink: 0;
-          transition: color 0.15s, border-color 0.15s;
+          color: #AAAAAA; cursor: pointer; flex-shrink: 0;
+          transition: color 0.15s, border-color 0.15s, background 0.15s;
         }
-        .cp-modal-close:hover { color: #AAA; border-color: #333; }
+        .cp-modal-close:hover { color: #555; border-color: #C8C0B0; background: #E8E4DC; }
         .cp-modal-body { padding: 20px 24px; }
 
         .cp-form-error {
           display: flex; align-items: flex-start; gap: 8px;
-          background: rgba(248,113,113,0.07); border: 1px solid rgba(248,113,113,0.18);
+          background: rgba(220,60,60,0.06); border: 1px solid rgba(220,60,60,0.15);
           border-radius: 9px; padding: 11px 13px; margin-bottom: 18px;
-          font-size: 12px; font-weight: 500; color: #F87171;
+          font-size: 12px; font-weight: 400; color: #DC3C3C;
         }
 
         .cp-field { margin-bottom: 16px; }
-        .cp-field-label { display: block; font-size: 11px; font-weight: 600; color: #444; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 7px; }
+        .cp-field-label { display: block; font-size: 11px; font-weight: 600; color: #555550; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 7px; }
         .cp-field-wrap { position: relative; }
-        .cp-field-icon { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: #2D2D2D; pointer-events: none; }
+        .cp-field-icon { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: #CCCCCC; pointer-events: none; }
         .cp-field-input {
           width: 100%; padding: 11px 14px 11px 38px;
-          background: #141414; border: 1px solid #222; border-radius: 10px;
-          font-family: 'Syne', sans-serif; font-size: 14px; font-weight: 400; color: #D0D0D0;
-          outline: none; transition: border-color 0.2s, box-shadow 0.2s; caret-color: #C8F135;
+          background: #F8F7F3; border: 1.5px solid #E5E2D8; border-radius: 10px;
+          font-family: inherit; font-size: 14px; font-weight: 400; color: #1A1A1A;
+          outline: none; transition: border-color 0.2s, box-shadow 0.2s, background 0.2s;
+          caret-color: #F0A500;
         }
-        .cp-field-input::placeholder { color: #2A2A2A; }
-        .cp-field-input:focus { border-color: rgba(200,241,53,0.3); box-shadow: 0 0 0 3px rgba(200,241,53,0.06); }
-        .cp-field-hint { font-family: 'DM Mono', monospace; font-size: 10px; font-weight: 400; color: #2D2D2D; margin-top: 6px; letter-spacing: 0.04em; }
+        .cp-field-input::placeholder { color: #C8C0B0; }
+        .cp-field-input:focus { border-color: rgba(240,165,0,0.4); background: #FFFFFF; box-shadow: 0 0 0 3px rgba(240,165,0,0.08); }
+        .cp-field-hint { font-size: 11px; font-weight: 400; color: #BBBBBB; margin-top: 6px; letter-spacing: 0.02em; }
 
         /* Toggle switch */
         .cp-toggle-row {
           display: flex; align-items: center; justify-content: space-between;
           padding: 12px 14px;
-          background: #141414; border: 1px solid #1E1E1E; border-radius: 10px;
+          background: #F8F7F3; border: 1.5px solid #E5E2D8; border-radius: 10px;
           margin-bottom: 16px;
         }
-        .cp-toggle-label { font-size: 13px; font-weight: 600; color: #888; }
-        .cp-toggle-sub { font-family: 'DM Mono', monospace; font-size: 10px; color: #333; margin-top: 2px; }
+        .cp-toggle-label { font-size: 13px; font-weight: 600; color: #555550; }
+        .cp-toggle-sub { font-size: 11px; color: #BBBBBB; margin-top: 2px; font-weight: 400; }
         .cp-switch { position: relative; width: 40px; height: 22px; flex-shrink: 0; }
         .cp-switch input { opacity: 0; width: 0; height: 0; }
         .cp-switch-track {
           position: absolute; inset: 0;
-          border-radius: 999px; background: #1E1E1E; border: 1px solid #2A2A2A;
+          border-radius: 999px; background: #E5E2D8; border: 1.5px solid #D8D4C8;
           cursor: pointer; transition: background 0.2s, border-color 0.2s;
         }
         .cp-switch-track::after {
           content: ''; position: absolute; left: 3px; top: 50%; transform: translateY(-50%);
-          width: 14px; height: 14px; background: #333; border-radius: 50%;
+          width: 14px; height: 14px; background: #BBBBBB; border-radius: 50%;
           transition: left 0.2s, background 0.2s;
         }
-        .cp-switch input:checked + .cp-switch-track { background: rgba(200,241,53,0.15); border-color: rgba(200,241,53,0.3); }
-        .cp-switch input:checked + .cp-switch-track::after { left: 21px; background: #C8F135; }
+        .cp-switch input:checked + .cp-switch-track { background: rgba(240,165,0,0.15); border-color: rgba(240,165,0,0.35); }
+        .cp-switch input:checked + .cp-switch-track::after { left: 21px; background: #F0A500; }
 
         .cp-modal-actions { display: flex; gap: 10px; padding: 0 24px 20px; }
         .cp-btn-cancel {
           flex: 1; padding: 11px;
-          background: #141414; border: 1px solid #222; border-radius: 10px;
-          font-family: 'Syne', sans-serif; font-size: 13px; font-weight: 600; color: #555;
+          background: #F5F3EE; border: 1.5px solid #E5E2D8; border-radius: 10px;
+          font-family: inherit; font-size: 13px; font-weight: 500; color: #888880;
           cursor: pointer; transition: background 0.15s, color 0.15s;
         }
-        .cp-btn-cancel:hover:not(:disabled) { background: #1C1C1C; color: #AAA; }
+        .cp-btn-cancel:hover:not(:disabled) { background: #EDEAE3; color: #333; }
         .cp-btn-cancel:disabled { opacity: 0.4; cursor: not-allowed; }
 
         .cp-btn-submit {
-          flex: 1; padding: 11px; background: #C8F135; border: none; border-radius: 10px;
-          font-family: 'Syne', sans-serif; font-size: 13px; font-weight: 700; color: #0A0A0A;
+          flex: 1; padding: 11px; background: #F0A500; border: none; border-radius: 10px;
+          font-family: inherit; font-size: 13px; font-weight: 600; color: #1A1A1A;
           cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px;
           transition: background 0.2s, transform 0.15s;
-          box-shadow: 0 0 16px rgba(200,241,53,0.1);
+          box-shadow: 0 4px 14px rgba(240,165,0,0.2);
         }
-        .cp-btn-submit:hover:not(:disabled) { background: #D4F542; transform: translateY(-1px); }
+        .cp-btn-submit:hover:not(:disabled) { background: #E09800; transform: translateY(-1px); }
         .cp-btn-submit:active:not(:disabled) { transform: translateY(0); }
         .cp-btn-submit:disabled { opacity: 0.5; cursor: not-allowed; }
 
         .cp-btn-delete-confirm {
           flex: 1; padding: 11px;
-          background: rgba(248,113,113,0.1); border: 1px solid rgba(248,113,113,0.22); border-radius: 10px;
-          font-family: 'Syne', sans-serif; font-size: 13px; font-weight: 700; color: #F87171;
+          background: rgba(220,60,60,0.07); border: 1.5px solid rgba(220,60,60,0.18); border-radius: 10px;
+          font-family: inherit; font-size: 13px; font-weight: 600; color: #DC3C3C;
           cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px;
           transition: background 0.15s, border-color 0.15s;
         }
-        .cp-btn-delete-confirm:hover:not(:disabled) { background: rgba(248,113,113,0.18); border-color: rgba(248,113,113,0.35); }
+        .cp-btn-delete-confirm:hover:not(:disabled) { background: rgba(220,60,60,0.13); border-color: rgba(220,60,60,0.3); }
         .cp-btn-delete-confirm:disabled { opacity: 0.5; cursor: not-allowed; }
 
         /* Delete modal */
         .cp-delete-body { padding: 28px 24px 20px; text-align: center; }
         .cp-delete-icon {
           width: 52px; height: 52px;
-          background: rgba(248,113,113,0.08); border: 1px solid rgba(248,113,113,0.18); border-radius: 13px;
+          background: rgba(220,60,60,0.07); border: 1.5px solid rgba(220,60,60,0.15); border-radius: 13px;
           display: flex; align-items: center; justify-content: center;
-          margin: 0 auto 16px; color: #F87171;
+          margin: 0 auto 16px; color: #DC3C3C;
         }
-        .cp-delete-title { font-size: 16px; font-weight: 700; color: #E0E0E0; margin: 0 0 8px 0; }
-        .cp-delete-desc { font-size: 13px; font-weight: 400; color: #444; line-height: 1.6; margin: 0; }
+        .cp-delete-title { font-size: 16px; font-weight: 700; color: #1A1A1A; margin: 0 0 8px 0; }
+        .cp-delete-desc { font-size: 13px; font-weight: 400; color: #AAAAAA; line-height: 1.6; margin: 0; }
         .cp-delete-target {
           display: inline-block; margin-top: 12px;
-          font-family: 'DM Mono', monospace; font-size: 11px; color: #C8F135;
-          background: rgba(200,241,53,0.06); border: 1px solid rgba(200,241,53,0.12);
-          border-radius: 6px; padding: 3px 10px;
+          font-size: 12px; color: #C87A00; font-family: monospace;
+          background: rgba(240,165,0,0.07); border: 1px solid rgba(240,165,0,0.18);
+          border-radius: 6px; padding: 3px 10px; font-weight: 500;
         }
       `}</style>
 
-      <div className="cp-root" style={{ background: "#0A0A0A", minHeight: "100vh" }}>
+      <div className="cp-root" style={{ background: "#FAFAF8", minHeight: "100vh" }}>
         <div className="cp-inner">
 
           {/* ---- PAGE HEADER ---- */}
@@ -546,7 +547,7 @@ export default function CompaniesPage() {
                   {isLoading ? (
                     <tr><td colSpan={6}>
                       <div className="cp-empty-cell">
-                        <Loader2 size={26} className="cp-spinner" style={{ color: "#C8F135", margin: "0 auto 12px", display: "block" }} />
+                        <Loader2 size={26} className="cp-spinner" style={{ color: "#F0A500", margin: "0 auto 12px", display: "block" }} />
                         <p className="cp-empty-desc">Memuat data klien...</p>
                       </div>
                     </td></tr>
@@ -563,7 +564,7 @@ export default function CompaniesPage() {
                       <td><span className="cp-company-name">{company.name}</span></td>
                       <td>
                         <span className="cp-email-cell">
-                          <Mail size={12} style={{ color: "#2D2D2D", flexShrink: 0 }} />
+                          <Mail size={12} style={{ color: "#CCCCCC", flexShrink: 0 }} />
                           {company.emailPic}
                         </span>
                       </td>
@@ -681,7 +682,6 @@ export default function CompaniesPage() {
                     <input type="email" required value={editData.emailPic} onChange={(e) => setEditData({ ...editData, emailPic: e.target.value })} placeholder="pic@perusahaan.com" className="cp-field-input" />
                   </div>
                 </div>
-                {/* Toggle Status */}
                 <div className="cp-toggle-row">
                   <div>
                     <p className="cp-toggle-label">Status Akun</p>

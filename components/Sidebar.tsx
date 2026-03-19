@@ -22,7 +22,6 @@ export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
   const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   useEffect(() => {
-    // Ambil profil ringan (bukan token) untuk UI
     const storedUser = localStorage.getItem("userProfile");
     if (storedUser) {
       try { setUserProfile(JSON.parse(storedUser)); }
@@ -32,20 +31,18 @@ export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
 
   const isSuperAdmin = userProfile?.role === "SUPERADMIN";
 
-  // MENU STRUKTUR M-TRACK SEBENARNYA
   const MENU_ITEMS = [
-    { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard, show: true },
-    { name: "Manajemen Klien", href: "/dashboard/companies", icon: Building2, show: isSuperAdmin },
-    { name: "Data Alat & Inspeksi", href: "/dashboard/equipments", icon: Wrench, show: true },
-    { name: "Log Notifikasi", href: "/dashboard/logs", icon: BellRing, show: true },
+    { name: "Dashboard",           href: "/dashboard",              icon: LayoutDashboard, show: true },
+    { name: "Manajemen Klien",     href: "/dashboard/companies",    icon: Building2,       show: isSuperAdmin },
+    { name: "Data Alat & Inspeksi",href: "/dashboard/equipments",   icon: Wrench,          show: true },
+    { name: "Log Notifikasi",      href: "/dashboard/logs",         icon: BellRing,        show: true },
   ];
 
-  // LOGOUT YANG BENAR (HIT API, BUKAN HAPUS LOCALSTORAGE DOANG)
   const handleLogoutAction = async () => {
     setIsLoggingOut(true);
     try {
       await fetch("/api/auth/logout", { method: "POST" });
-      localStorage.removeItem("userProfile"); // Hanya hapus info UI
+      localStorage.removeItem("userProfile");
       router.replace("/");
     } catch (error) {
       console.error("Gagal logout:", error);
@@ -53,7 +50,6 @@ export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
     }
   };
 
-  // Initials dari companyName buat avatar fallback
   const initials = userProfile?.companyName
     ? userProfile.companyName.split(" ").map((w) => w[0]).slice(0, 2).join("").toUpperCase()
     : "MT";
@@ -71,13 +67,13 @@ export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
           left: 0;
           z-index: 30;
           width: 268px;
-          background: #0D0D0D;
-          border-right: 1px solid #1C1C1C;
+          background: #FFFFFF;
+          border-right: 1.5px solid #EAE7DF;
           display: flex;
           flex-direction: column;
           transform: translateX(-100%);
           transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-          box-shadow: 4px 0 32px rgba(0,0,0,0.5);
+          box-shadow: 4px 0 32px rgba(0,0,0,0.07);
         }
         .sb-root.open  { transform: translateX(0); }
         @media (min-width: 1024px) {
@@ -88,13 +84,13 @@ export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
           }
         }
 
-        /* Grid texture */
+        /* Grid texture — subtle warm tint */
         .sb-grid {
           position: absolute;
           inset: 0;
           background-image:
-            linear-gradient(rgba(200,241,53,0.025) 1px, transparent 1px),
-            linear-gradient(90deg, rgba(200,241,53,0.025) 1px, transparent 1px);
+            linear-gradient(rgba(240,165,0,0.04) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(240,165,0,0.04) 1px, transparent 1px);
           background-size: 28px 28px;
           pointer-events: none;
         }
@@ -106,7 +102,7 @@ export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
           left: -60px;
           width: 240px;
           height: 240px;
-          background: radial-gradient(circle, rgba(200,241,53,0.07) 0%, transparent 70%);
+          background: radial-gradient(circle, rgba(240,165,0,0.07) 0%, transparent 70%);
           pointer-events: none;
         }
 
@@ -117,10 +113,11 @@ export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
           justify-content: space-between;
           padding: 0 20px;
           height: 68px;
-          border-bottom: 1px solid #181818;
+          border-bottom: 1.5px solid #EAE7DF;
           flex-shrink: 0;
           position: relative;
           z-index: 1;
+          background: #FFFFFF;
         }
 
         .sb-logo-wrap {
@@ -137,7 +134,6 @@ export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
           justify-content: center;
           flex-shrink: 0;
         }
-        .sb-logo-mark svg { width: 18px; height: 18px; color: #0A0A0A; }
 
         .sb-logo-text {
           display: flex;
@@ -146,18 +142,19 @@ export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
         }
         .sb-logo-name {
           font-size: 16px;
-          font-weight: 900;
-          color: #F0F0F0;
+          font-weight: 800;
+          color: #1A1A1A;
           letter-spacing: -0.02em;
         }
         .sb-logo-sub {
           font-family: 'DM Mono', monospace;
+          font-weight: 500;
           font-size: 9px;
-          color: #C8F135;
+          color: #000000;
           text-transform: uppercase;
           letter-spacing: 0.18em;
           margin-top: 2px;
-          opacity: 0.8;
+          opacity: 0.9;
         }
 
         .sb-close-btn {
@@ -165,21 +162,21 @@ export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
           align-items: center;
           justify-content: center;
           width: 32px; height: 32px;
-          background: #161616;
-          border: 1px solid #252525;
+          background: #F5F3EE;
+          border: 1.5px solid #E5E2D8;
           border-radius: 8px;
           cursor: pointer;
-          color: #555;
-          transition: color 0.2s, border-color 0.2s;
+          color: #AAAAAA;
+          transition: color 0.2s, border-color 0.2s, background 0.2s;
         }
-        .sb-close-btn:hover { color: #F0F0F0; border-color: #444; }
+        .sb-close-btn:hover { color: #1A1A1A; border-color: #C8C0B0; background: #EDEAE3; }
         @media (min-width: 1024px) { .sb-close-btn { display: none; } }
 
         /* ---- USER CARD ---- */
         .sb-user-card {
           margin: 16px 16px 0;
-          background: #141414;
-          border: 1px solid #1E1E1E;
+          background: #FAFAF7;
+          border: 1.5px solid #EAE7DF;
           border-radius: 12px;
           padding: 14px 16px;
           display: flex;
@@ -194,15 +191,15 @@ export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
           position: absolute;
           top: 0; left: 0;
           width: 3px; height: 100%;
-          background: #C8F135;
-          opacity: 0.4;
+          background: #F0A500;
+          opacity: 0.5;
           border-radius: 12px 0 0 12px;
         }
 
         .sb-avatar {
           width: 38px; height: 38px;
-          background: rgba(200,241,53,0.1);
-          border: 1px solid rgba(200,241,53,0.2);
+          background: rgba(240,165,0,0.1);
+          border: 1.5px solid rgba(240,165,0,0.22);
           border-radius: 10px;
           display: flex;
           align-items: center;
@@ -210,7 +207,7 @@ export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
           font-family: 'DM Mono', monospace;
           font-size: 12px;
           font-weight: 500;
-          color: #C8F135;
+          color: #C87A00;
           flex-shrink: 0;
         }
 
@@ -218,7 +215,7 @@ export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
         .sb-user-label {
           font-family: 'DM Mono', monospace;
           font-size: 9px;
-          color: #3A3A3A;
+          color: #BBBBBB;
           text-transform: uppercase;
           letter-spacing: 0.12em;
           margin-bottom: 3px;
@@ -226,7 +223,8 @@ export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
         .sb-user-name {
           font-size: 13px;
           font-weight: 700;
-          color: #D0D0D0;
+          bold: 700;
+          color: #1A1A1A;
           white-space: nowrap;
           overflow: hidden;
           text-overflow: ellipsis;
@@ -235,20 +233,21 @@ export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
           display: inline-flex;
           align-items: center;
           margin-top: 5px;
-          background: rgba(200,241,53,0.07);
-          border: 1px solid rgba(200,241,53,0.15);
+          background: rgba(240,165,0,0.08);
+          border: 1px solid rgba(240,165,0,0.2);
           border-radius: 999px;
           padding: 2px 8px;
           font-family: 'DM Mono', monospace;
           font-size: 9px;
-          color: #C8F135;
+          color: #C87A00;
           letter-spacing: 0.08em;
           text-transform: uppercase;
+          font-weight: 600;
         }
         .sb-role-badge.admin {
-          background: rgba(251,191,36,0.07);
-          border-color: rgba(251,191,36,0.2);
-          color: #FBBF24;
+          background: rgba(200,100,0,0.08);
+          border-color: rgba(200,100,0,0.2);
+          color: #A05000;
         }
 
         /* ---- SECTION DIVIDER ---- */
@@ -256,11 +255,12 @@ export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
           padding: 20px 20px 8px;
           font-family: 'DM Mono', monospace;
           font-size: 9px;
-          color: #2D2D2D;
+          color: #CCCCCC;
           text-transform: uppercase;
           letter-spacing: 0.18em;
           position: relative;
           z-index: 1;
+          font-weight: 500;
         }
 
         /* ---- NAV ---- */
@@ -283,26 +283,27 @@ export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
           padding: 11px 14px;
           border-radius: 10px;
           font-size: 13px;
-          font-weight: 600;
-          color: #444;
+          font-weight: 700;
+          color: #AAAAAA;
           text-decoration: none;
-          transition: background 0.15s, color 0.15s;
+          transition: background 0.15s, color 0.15s, border-color 0.15s;
           position: relative;
           cursor: pointer;
-          border: 1px solid transparent;
+          border: 1.5px solid transparent;
         }
         .sb-nav-item:hover {
-          background: #161616;
-          color: #888;
-          border-color: #1C1C1C;
+          background: #F5F3EE;
+          color: #555550;
+          border-color: #EAE7DF;
         }
         .sb-nav-item.active {
-          background: rgba(200,241,53,0.08);
-          border-color: rgba(200,241,53,0.15);
-          color: #C8F135;
+          background: rgba(240,165,0,0.08);
+          border-color: rgba(240,165,0,0.2);
+          color: #C87A00;
         }
-        .sb-nav-item.active .sb-nav-icon { color: #C8F135; }
-        .sb-nav-item:not(.active) .sb-nav-icon { color: #333; }
+        .sb-nav-item.active .sb-nav-icon { color: #F0A500; }
+        .sb-nav-item:not(.active) .sb-nav-icon { color: #CCCCCC; }
+        .sb-nav-item:hover:not(.active) .sb-nav-icon { color: #999990; }
 
         /* Active left bar */
         .sb-nav-item.active::before {
@@ -310,7 +311,7 @@ export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
           position: absolute;
           left: 0; top: 20%; bottom: 20%;
           width: 2px;
-          background: #C8F135;
+          background: #F0A500;
           border-radius: 0 2px 2px 0;
         }
 
@@ -320,7 +321,7 @@ export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
         .sb-active-dot {
           width: 5px; height: 5px;
           border-radius: 50%;
-          background: #C8F135;
+          background: #F0A500;
           flex-shrink: 0;
           animation: sb-pulse 2s ease-in-out infinite;
         }
@@ -329,12 +330,13 @@ export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
           50%       { opacity: 0.3; }
         }
 
-        /* ---- LOGOUT ---- */
+        /* ---- FOOTER / LOGOUT ---- */
         .sb-footer {
           padding: 12px 12px 16px;
-          border-top: 1px solid #141414;
+          border-top: 1.5px solid #EAE7DF;
           position: relative;
           z-index: 1;
+          background: #FFFFFF;
         }
 
         .sb-logout-btn {
@@ -345,21 +347,21 @@ export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
           gap: 8px;
           padding: 11px;
           border-radius: 10px;
-          background: rgba(248,113,113,0.06);
-          border: 1px solid rgba(248,113,113,0.12);
+          background: rgba(220,60,60,0.05);
+          border: 1.5px solid rgba(220,60,60,0.12);
           font-family: 'Syne', sans-serif;
           font-size: 12px;
-          font-weight: 700;
-          color: #7A3535;
+          font-weight: 800;
+          color: #C07070;
           letter-spacing: 0.06em;
           text-transform: uppercase;
           cursor: pointer;
           transition: background 0.2s, color 0.2s, border-color 0.2s;
         }
         .sb-logout-btn:hover {
-          background: rgba(248,113,113,0.12);
-          border-color: rgba(248,113,113,0.25);
-          color: #F87171;
+          background: rgba(220,60,60,0.1);
+          border-color: rgba(220,60,60,0.25);
+          color: #DC3C3C;
         }
 
         /* ---- BACKDROP ---- */
@@ -367,7 +369,7 @@ export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
           position: fixed;
           inset: 0;
           z-index: 20;
-          background: rgba(0,0,0,0.7);
+          background: rgba(0,0,0,0.3);
           backdrop-filter: blur(4px);
           transition: opacity 0.3s;
         }
@@ -388,40 +390,41 @@ export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
         .sb-modal-bg {
           position: absolute;
           inset: 0;
-          background: rgba(0,0,0,0.75);
+          background: rgba(0,0,0,0.3);
           backdrop-filter: blur(6px);
         }
         .sb-modal {
           position: relative;
-          background: #111;
-          border: 1px solid #222;
+          background: #FFFFFF;
+          border: 1.5px solid #EAE7DF;
           border-radius: 20px;
           width: 100%;
           max-width: 360px;
           padding: 32px 28px;
           text-align: center;
-          box-shadow: 0 32px 64px rgba(0,0,0,0.6);
+          box-shadow: 0 24px 60px rgba(0,0,0,0.12);
         }
         .sb-modal-icon {
           width: 60px; height: 60px;
-          background: rgba(248,113,113,0.1);
-          border: 1px solid rgba(248,113,113,0.2);
+          background: rgba(220,60,60,0.07);
+          border: 1.5px solid rgba(220,60,60,0.15);
           border-radius: 16px;
           display: flex;
           align-items: center;
           justify-content: center;
           margin: 0 auto 20px;
-          color: #F87171;
+          color: #DC3C3C;
         }
         .sb-modal-title {
           font-size: 18px;
           font-weight: 900;
-          color: #F0F0F0;
+          color: #1A1A1A;
           margin: 0 0 8px 0;
         }
         .sb-modal-desc {
           font-size: 13px;
-          color: #555;
+          color: #AAAAAA;
+          font-weight: 600;
           margin: 0;
           line-height: 1.6;
         }
@@ -433,29 +436,29 @@ export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
         .sb-btn-cancel {
           flex: 1;
           padding: 12px;
-          background: #161616;
-          border: 1px solid #252525;
+          background: #F5F3EE;
+          border: 1.5px solid #E5E2D8;
           border-radius: 10px;
           font-family: 'Syne', sans-serif;
           font-size: 13px;
-          font-weight: 700;
-          color: #666;
+          font-weight: 800;
+          color: #888880;
           cursor: pointer;
           transition: background 0.2s, color 0.2s;
         }
-        .sb-btn-cancel:hover:not(:disabled) { background: #1E1E1E; color: #AAA; }
+        .sb-btn-cancel:hover:not(:disabled) { background: #EDEAE3; color: #333; }
         .sb-btn-cancel:disabled { opacity: 0.4; cursor: not-allowed; }
 
         .sb-btn-confirm {
           flex: 1;
           padding: 12px;
-          background: rgba(248,113,113,0.12);
-          border: 1px solid rgba(248,113,113,0.25);
+          background: rgba(220,60,60,0.08);
+          border: 1.5px solid rgba(220,60,60,0.2);
           border-radius: 10px;
           font-family: 'Syne', sans-serif;
           font-size: 13px;
-          font-weight: 700;
-          color: #F87171;
+          font-weight: 800;
+          color: #DC3C3C;
           cursor: pointer;
           display: flex;
           align-items: center;
@@ -464,8 +467,8 @@ export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
           transition: background 0.2s, border-color 0.2s;
         }
         .sb-btn-confirm:hover:not(:disabled) {
-          background: rgba(248,113,113,0.2);
-          border-color: rgba(248,113,113,0.4);
+          background: rgba(220,60,60,0.14);
+          border-color: rgba(220,60,60,0.35);
         }
         .sb-btn-confirm:disabled { opacity: 0.5; cursor: not-allowed; }
 
@@ -495,7 +498,7 @@ export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
               />
             </div>
             <div className="sb-logo-text">
-              <span className="sb-logo-name" style={{ fontWeight: 600 }}>MARIS</span>
+              <span className="sb-logo-name">MARIS</span>
               <span className="sb-logo-sub">Enterprise</span>
             </div>
           </div>

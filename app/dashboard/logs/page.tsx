@@ -33,8 +33,7 @@ export default function NotificationLogsPage() {
     try {
       const res = await fetch("/api/logs");
       if (!res.ok) throw new Error("Gagal memuat riwayat notifikasi");
-      const data = await res.json();
-      setLogs(data);
+      setLogs(await res.json());
     } catch (err: any) {
       setErrorMsg(err.message);
     } finally {
@@ -54,267 +53,123 @@ export default function NotificationLogsPage() {
   return (
     <>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800;900&family=DM+Mono:wght@400;500&display=swap');
-
         .lg-root * { box-sizing: border-box; }
-        .lg-root { font-family: 'Syne', sans-serif; }
+        .lg-root { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
 
-        @keyframes lg-fadeup {
-          from { opacity: 0; transform: translateY(10px); }
-          to   { opacity: 1; transform: translateY(0); }
-        }
+        @keyframes lg-fadeup { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         @keyframes lg-spin { to { transform: rotate(360deg); } }
 
-        .lg-inner {
-          padding: 28px 20px;
-          max-width: 1280px;
-          margin: 0 auto;
-          animation: lg-fadeup 0.4s ease both;
-        }
+        .lg-inner { padding: 28px 20px; max-width: 1280px; margin: 0 auto; animation: lg-fadeup 0.4s ease both; }
         @media (min-width: 768px)  { .lg-inner { padding: 40px 32px; } }
         @media (min-width: 1024px) { .lg-inner { padding: 48px 48px; } }
 
-        /* ---- PAGE HEADER ---- */
-        .lg-eyebrow {
-          font-family: 'DM Mono', monospace;
-          font-size: 10px;
-          color: #C8F135;
-          text-transform: uppercase;
-          letter-spacing: 0.15em;
-          margin-bottom: 8px;
-        }
+        .lg-eyebrow { font-size: 10px; font-weight: 500; color: #C87A00; text-transform: uppercase; letter-spacing: 0.14em; margin-bottom: 8px; }
+
         .lg-page-title {
-          font-size: clamp(20px, 3.5vw, 28px);
+          font-size: clamp(20px, 3.5vw, 26px);
           font-weight: 700;
-          color: #F0F0F0;
+          color: #1A1A1A;
           margin: 0 0 6px 0;
-          line-height: 1.1;
+          line-height: 1.15;
           display: flex;
           align-items: center;
           gap: 12px;
         }
         .lg-title-icon {
           width: 36px; height: 36px;
-          background: rgba(200,241,53,0.08);
-          border: 1px solid rgba(200,241,53,0.15);
+          background: rgba(240,165,0,0.08);
+          border: 1.5px solid rgba(240,165,0,0.18);
           border-radius: 10px;
           display: flex; align-items: center; justify-content: center;
-          color: #C8F135;
+          color: #C87A00;
           flex-shrink: 0;
         }
-        .lg-page-desc { font-size: 13px; color: #444; margin: 0; max-width: 520px; line-height: 1.6; }
+        .lg-page-desc { font-size: 13px; font-weight: 400; color: #AAAAAA; margin: 0; max-width: 520px; line-height: 1.6; }
 
-        .lg-divider {
-          height: 1px;
-          background: linear-gradient(90deg, #C8F135 0%, transparent 60%);
-          margin: 24px 0 28px;
-          opacity: 0.1;
-        }
+        .lg-divider { height: 1px; background: linear-gradient(90deg, #F0A500 0%, transparent 60%); margin: 24px 0 28px; opacity: 0.2; }
 
-        /* ---- ERROR BAR ---- */
         .lg-error-bar {
-          display: flex;
-          align-items: center;
-          gap: 10px;
-          background: rgba(248,113,113,0.07);
-          border: 1px solid rgba(248,113,113,0.2);
-          border-radius: 10px;
-          padding: 13px 16px;
-          margin-bottom: 24px;
-          font-size: 13px;
-          color: #F87171;
-          font-weight: 600;
+          display: flex; align-items: center; gap: 10px;
+          background: rgba(220,60,60,0.06); border: 1px solid rgba(220,60,60,0.15);
+          border-radius: 10px; padding: 13px 16px; margin-bottom: 24px;
+          font-size: 13px; font-weight: 400; color: #DC3C3C;
         }
 
-        /* ---- TABLE CARD ---- */
-        .lg-card {
-          background: #111;
-          border: 1px solid #1C1C1C;
-          border-radius: 16px;
-          overflow: hidden;
-        }
+        /* Card */
+        .lg-card { background: #FFFFFF; border: 1.5px solid #E8E4DC; border-radius: 16px; overflow: hidden; box-shadow: 0 2px 16px rgba(0,0,0,0.05); }
 
         /* Toolbar */
         .lg-toolbar {
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          gap: 12px;
-          padding: 14px 20px;
-          background: #0D0D0D;
-          border-bottom: 1px solid #181818;
-          flex-wrap: wrap;
+          display: flex; align-items: center; justify-content: space-between;
+          gap: 12px; padding: 14px 20px;
+          background: #FAFAF7; border-bottom: 1px solid #F0EDE4; flex-wrap: wrap;
         }
-        .lg-search-wrap {
-          position: relative;
-          flex: 1;
-          min-width: 180px;
-          max-width: 360px;
-        }
-        .lg-search-icon {
-          position: absolute;
-          left: 11px; top: 50%;
-          transform: translateY(-50%);
-          color: #2D2D2D;
-          pointer-events: none;
-        }
+        .lg-search-wrap { position: relative; flex: 1; min-width: 180px; max-width: 360px; }
+        .lg-search-icon { position: absolute; left: 11px; top: 50%; transform: translateY(-50%); color: #CCCCCC; pointer-events: none; }
         .lg-search-input {
-          width: 100%;
-          padding: 9px 14px 9px 34px;
-          background: #141414;
-          border: 1px solid #222;
-          border-radius: 8px;
-          font-family: 'Syne', sans-serif;
-          font-size: 13px;
-          color: #D0D0D0;
-          outline: none;
-          transition: border-color 0.2s, box-shadow 0.2s;
-          caret-color: #C8F135;
+          width: 100%; padding: 9px 14px 9px 34px;
+          background: #FFFFFF; border: 1.5px solid #E5E2D8; border-radius: 8px;
+          font-family: inherit; font-size: 13px; font-weight: 400; color: #1A1A1A;
+          outline: none; transition: border-color 0.2s, box-shadow 0.2s; caret-color: #F0A500;
         }
-        .lg-search-input::placeholder { color: #2A2A2A; }
-        .lg-search-input:focus {
-          border-color: rgba(200,241,53,0.3);
-          box-shadow: 0 0 0 3px rgba(200,241,53,0.06);
-        }
-        .lg-log-count {
-          font-family: 'DM Mono', monospace;
-          font-size: 10px;
-          color: #2D2D2D;
-          text-transform: uppercase;
-          letter-spacing: 0.12em;
-          white-space: nowrap;
-        }
-        .lg-log-count strong { color: #C8F135; }
+        .lg-search-input::placeholder { color: #CCCCCC; }
+        .lg-search-input:focus { border-color: rgba(240,165,0,0.35); box-shadow: 0 0 0 3px rgba(240,165,0,0.08); }
+
+        .lg-log-count { font-size: 11px; font-weight: 400; color: #AAAAAA; text-transform: uppercase; letter-spacing: 0.1em; white-space: nowrap; }
+        .lg-log-count strong { color: #C87A00; font-weight: 600; }
 
         /* Table */
         .lg-table-scroll { overflow-x: auto; }
-        .lg-table {
-          width: 100%;
-          border-collapse: collapse;
-          text-align: left;
-        }
-        .lg-table thead tr { border-bottom: 1px solid #181818; }
+        .lg-table { width: 100%; border-collapse: collapse; text-align: left; }
+        .lg-table thead tr { border-bottom: 1px solid #F0EDE4; }
         .lg-table thead th {
-          padding: 12px 20px;
-          font-family: 'DM Mono', monospace;
-          font-size: 9px;
-          text-transform: uppercase;
-          letter-spacing: 0.14em;
-          color: #2D2D2D;
-          font-weight: 500;
-          background: #0D0D0D;
-          white-space: nowrap;
+          padding: 12px 20px; font-size: 10px; font-weight: 500;
+          text-transform: uppercase; letter-spacing: 0.1em; color: #AAAAAA;
+          background: #FAFAF7; white-space: nowrap;
         }
-        .lg-table tbody tr {
-          border-bottom: 1px solid #161616;
-          transition: background 0.12s;
-        }
+        .lg-table tbody tr { border-bottom: 1px solid #F5F3EE; transition: 0.12s; }
         .lg-table tbody tr:last-child { border-bottom: none; }
-        .lg-table tbody tr:hover { background: #141414; }
+        .lg-table tbody tr:hover td { background: #FDFCF8; }
         .lg-table td { padding: 14px 20px; vertical-align: middle; }
 
         /* Status badges */
         .lg-badge {
-          display: inline-flex;
-          align-items: center;
-          gap: 5px;
-          padding: 4px 10px;
-          border-radius: 7px;
-          font-family: 'DM Mono', monospace;
-          font-size: 10px;
-          font-weight: 500;
-          text-transform: uppercase;
-          letter-spacing: 0.06em;
-          white-space: nowrap;
-          border: 1px solid transparent;
+          display: inline-flex; align-items: center; gap: 5px;
+          padding: 4px 10px; border-radius: 7px;
+          font-size: 10px; font-weight: 500;
+          text-transform: uppercase; letter-spacing: 0.06em;
+          white-space: nowrap; border: 1px solid transparent;
         }
-        .lg-badge.sent    { background: rgba(52,211,153,0.08);  border-color: rgba(52,211,153,0.18);  color: #34D399; }
-        .lg-badge.failed  { background: rgba(248,113,113,0.08); border-color: rgba(248,113,113,0.18); color: #F87171; }
-        .lg-badge.bounced { background: rgba(251,146,60,0.08);  border-color: rgba(251,146,60,0.18);  color: #FB923C; }
-        .lg-badge.pending { background: rgba(255,255,255,0.03); border-color: #222;                   color: #444; }
+        .lg-badge.sent    { background: rgba(34,160,100,0.07);  border-color: rgba(34,160,100,0.18);  color: #22A064; }
+        .lg-badge.failed  { background: rgba(220,60,60,0.07);   border-color: rgba(220,60,60,0.18);   color: #DC3C3C; }
+        .lg-badge.bounced { background: rgba(234,120,40,0.07);  border-color: rgba(234,120,40,0.18);  color: #EA7828; }
+        .lg-badge.pending { background: #F5F3EE;                border-color: #E5E2D8;                color: #AAAAAA; }
 
         .lg-error-msg {
-          font-family: 'DM Mono', monospace;
-          font-size: 10px;
-          color: #7A3535;
-          margin-top: 5px;
-          max-width: 200px;
-          overflow: hidden;
-          text-overflow: ellipsis;
-          white-space: nowrap;
+          font-size: 10px; font-weight: 400; color: #DC9090; margin-top: 5px;
+          max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+          font-family: monospace;
         }
 
-        /* Cell text styles */
-        .lg-company-name {
-          font-size: 13px;
-          font-weight: 600;
-          color: #AAA;
-          display: flex;
-          align-items: center;
-          gap: 7px;
-          margin-bottom: 3px;
-        }
-        .lg-email {
-          font-family: 'DM Mono', monospace;
-          font-size: 11px;
-          color: #3A3A3A;
-        }
-        .lg-eq-name {
-          font-size: 13px;
-          font-weight: 500;
-          color: #999;
-        }
-        .lg-eq-expiry {
-          font-family: 'DM Mono', monospace;
-          font-size: 10px;
-          color: #2D2D2D;
-          margin-top: 3px;
-          text-transform: uppercase;
-          letter-spacing: 0.06em;
-        }
-        .lg-sent-date {
-          font-family: 'DM Mono', monospace;
-          font-size: 12px;
-          color: #555;
-          text-align: right;
-          white-space: nowrap;
-        }
-        .lg-sent-time {
-          font-family: 'DM Mono', monospace;
-          font-size: 10px;
-          color: #2D2D2D;
-          text-align: right;
-          margin-top: 3px;
-          white-space: nowrap;
-        }
+        /* Cell text */
+        .lg-company-name { font-size: 13px; font-weight: 600; color: #1A1A1A; display: flex; align-items: center; gap: 7px; margin-bottom: 3px; }
+        .lg-email { font-size: 11px; font-weight: 400; color: #AAAAAA; font-family: monospace; }
+        .lg-eq-name { font-size: 13px; font-weight: 500; color: #333330; }
+        .lg-eq-expiry { font-size: 10px; font-weight: 400; color: #BBBBBB; margin-top: 3px; text-transform: uppercase; letter-spacing: 0.06em; font-family: monospace; }
+        .lg-sent-date { font-size: 12px; font-weight: 400; color: #555550; text-align: right; white-space: nowrap; font-family: monospace; }
+        .lg-sent-time { font-size: 10px; font-weight: 400; color: #BBBBBB; text-align: right; margin-top: 3px; white-space: nowrap; font-family: monospace; }
 
-        /* Empty / loading state */
-        .lg-empty {
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          justify-content: center;
-          padding: 72px 20px;
-          text-align: center;
-        }
-        .lg-empty-icon {
-          width: 60px; height: 60px;
-          background: rgba(255,255,255,0.02);
-          border: 1px solid #1E1E1E;
-          border-radius: 14px;
-          display: flex; align-items: center; justify-content: center;
-          margin: 0 auto 18px;
-          color: #222;
-        }
-        .lg-empty-title { font-size: 15px; font-weight: 700; color: #2D2D2D; margin: 0 0 6px 0; }
-        .lg-empty-desc  { font-size: 12px; color: #252525; margin: 0; max-width: 320px; line-height: 1.6; }
+        /* Empty / loading */
+        .lg-empty { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 72px 20px; text-align: center; }
+        .lg-empty-icon { width: 60px; height: 60px; background: #F5F3EE; border: 1.5px solid #E5E2D8; border-radius: 14px; display: flex; align-items: center; justify-content: center; margin: 0 auto 18px; color: #CCCCCC; }
+        .lg-empty-title { font-size: 15px; font-weight: 600; color: #555550; margin: 0 0 6px 0; }
+        .lg-empty-desc  { font-size: 12px; font-weight: 400; color: #AAAAAA; margin: 0; max-width: 320px; line-height: 1.6; }
         .lg-spinner { animation: lg-spin 1s linear infinite; }
       `}</style>
 
-      <div className="lg-root" style={{ background: "#0A0A0A", minHeight: "100vh" }}>
+      <div className="lg-root" style={{ background: "#FAFAF8", minHeight: "100vh" }}>
         <div className="lg-inner">
 
-          {/* ---- PAGE HEADER ---- */}
           <p className="lg-eyebrow">// Notification Audit Trail</p>
           <h1 className="lg-page-title">
             <span className="lg-title-icon"><BellRing size={18} /></span>
@@ -325,33 +180,21 @@ export default function NotificationLogsPage() {
           </p>
           <div className="lg-divider" />
 
-          {/* ---- ERROR ---- */}
           {errorMsg && (
             <div className="lg-error-bar">
-              <XCircle size={15} style={{ flexShrink: 0 }} />
-              {errorMsg}
+              <XCircle size={15} style={{ flexShrink: 0 }} /> {errorMsg}
             </div>
           )}
 
-          {/* ---- TABLE CARD ---- */}
           <div className="lg-card">
-
-            {/* Toolbar */}
             <div className="lg-toolbar">
               <div className="lg-search-wrap">
                 <Search size={14} className="lg-search-icon" />
-                <input
-                  type="text"
-                  placeholder="Cari perusahaan atau nama alat..."
-                  className="lg-search-input"
-                />
+                <input type="text" placeholder="Cari perusahaan atau nama alat..." className="lg-search-input" />
               </div>
-              <span className="lg-log-count">
-                Terakhir: <strong>{logs.length}</strong> Log
-              </span>
+              <span className="lg-log-count">Terakhir: <strong>{logs.length}</strong> Log</span>
             </div>
 
-            {/* Table */}
             <div className="lg-table-scroll">
               <table className="lg-table">
                 <thead>
@@ -364,94 +207,62 @@ export default function NotificationLogsPage() {
                 </thead>
                 <tbody>
                   {isLoading ? (
-                    <tr>
-                      <td colSpan={4}>
-                        <div className="lg-empty">
-                          <Loader2 size={28} className="lg-spinner" style={{ color: "#C8F135", marginBottom: 12 }} />
-                          <p className="lg-empty-desc">Memuat riwayat notifikasi...</p>
-                        </div>
-                      </td>
-                    </tr>
+                    <tr><td colSpan={4}>
+                      <div className="lg-empty">
+                        <Loader2 size={28} className="lg-spinner" style={{ color: "#F0A500", marginBottom: 12 }} />
+                        <p className="lg-empty-desc">Memuat riwayat notifikasi...</p>
+                      </div>
+                    </td></tr>
                   ) : logs.length === 0 ? (
-                    <tr>
-                      <td colSpan={4}>
-                        <div className="lg-empty">
-                          <div className="lg-empty-icon"><Send size={26} /></div>
-                          <p className="lg-empty-title">Belum ada aktivitas email</p>
-                          <p className="lg-empty-desc">
-                            Sistem belum pernah mengirimkan peringatan kedaluwarsa apa pun.
+                    <tr><td colSpan={4}>
+                      <div className="lg-empty">
+                        <div className="lg-empty-icon"><Send size={26} /></div>
+                        <p className="lg-empty-title">Belum ada aktivitas email</p>
+                        <p className="lg-empty-desc">Sistem belum pernah mengirimkan peringatan kedaluwarsa apa pun.</p>
+                      </div>
+                    </td></tr>
+                  ) : logs.map((log) => {
+                    const ui = getStatusUI(log.status);
+                    const Icon = ui.icon;
+                    return (
+                      <tr key={log.id}>
+                        <td>
+                          <span className={`lg-badge ${ui.variant}`}>
+                            <Icon size={11} /> {ui.label}
+                          </span>
+                          {log.errorMessage && (
+                            <p className="lg-error-msg" title={log.errorMessage}>{log.errorMessage}</p>
+                          )}
+                        </td>
+                        <td>
+                          {userRole === "SUPERADMIN" && (
+                            <p className="lg-company-name">
+                              <Building2 size={13} style={{ color: "#CCCCCC", flexShrink: 0 }} />
+                              {log.company.name}
+                            </p>
+                          )}
+                          <p className="lg-email">{log.company.emailPic}</p>
+                        </td>
+                        <td>
+                          <p className="lg-eq-name">{log.equipment.name}</p>
+                          <p className="lg-eq-expiry">Habis: {new Date(log.equipment.expiryDate).toLocaleDateString("id-ID")}</p>
+                        </td>
+                        <td>
+                          <p className="lg-sent-date">
+                            {log.sentAt ? new Date(log.sentAt).toLocaleDateString("id-ID", { day: "2-digit", month: "short", year: "numeric" }) : "—"}
                           </p>
-                        </div>
-                      </td>
-                    </tr>
-                  ) : (
-                    logs.map((log) => {
-                      const ui = getStatusUI(log.status);
-                      const Icon = ui.icon;
-                      return (
-                        <tr key={log.id}>
-
-                          {/* Status */}
-                          <td>
-                            <span className={`lg-badge ${ui.variant}`}>
-                              <Icon size={11} />
-                              {ui.label}
-                            </span>
-                            {log.errorMessage && (
-                              <p className="lg-error-msg" title={log.errorMessage}>
-                                {log.errorMessage}
-                              </p>
-                            )}
-                          </td>
-
-                          {/* Penerima */}
-                          <td>
-                            {userRole === "SUPERADMIN" && (
-                              <p className="lg-company-name">
-                                <Building2 size={13} style={{ color: "#2D2D2D", flexShrink: 0 }} />
-                                {log.company.name}
-                              </p>
-                            )}
-                            <p className="lg-email">{log.company.emailPic}</p>
-                          </td>
-
-                          {/* Alat */}
-                          <td>
-                            <p className="lg-eq-name">{log.equipment.name}</p>
-                            <p className="lg-eq-expiry">
-                              Habis: {new Date(log.equipment.expiryDate).toLocaleDateString("id-ID")}
-                            </p>
-                          </td>
-
-                          {/* Waktu */}
-                          <td>
-                            <p className="lg-sent-date">
-                              {log.sentAt
-                                ? new Date(log.sentAt).toLocaleDateString("id-ID", {
-                                    day: "2-digit", month: "short", year: "numeric",
-                                  })
-                                : "—"
-                              }
-                            </p>
-                            <p className="lg-sent-time">
-                              {log.sentAt
-                                ? new Date(log.sentAt).toLocaleTimeString("id-ID", {
-                                    hour: "2-digit", minute: "2-digit",
-                                  })
-                                : "Menunggu antrean"
-                              }
-                            </p>
-                          </td>
-
-                        </tr>
-                      );
-                    })
-                  )}
+                          <p className="lg-sent-time">
+                            {log.sentAt ? new Date(log.sentAt).toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" }) : "Menunggu antrean"}
+                          </p>
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
-
           </div>
+
         </div>
       </div>
     </>
