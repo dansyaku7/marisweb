@@ -270,14 +270,12 @@ export default function LoginPage() {
         @media (min-width: 1024px) {
           .right-pane { width: 50%; padding: 60px 72px; }
         }
-        /* Safe area for notched phones */
         @supports (padding: env(safe-area-inset-left)) {
           .right-pane {
             padding-left: calc(20px + env(safe-area-inset-left));
             padding-right: calc(20px + env(safe-area-inset-right));
           }
         }
-        /* Shorter screens: align to top so form isn't cut off */
         @media (max-height: 700px) {
           .right-pane { align-items: flex-start; padding-top: 32px; padding-bottom: 32px; }
         }
@@ -287,13 +285,37 @@ export default function LoginPage() {
           max-width: 420px;
         }
 
+        /* ---- LOGO: MOBILE (shown only on mobile, hidden on desktop) ---- */
         .mobile-logo {
           display: flex;
           justify-content: center;
-          margin-bottom: 32px;
+          margin-bottom: 36px;
         }
         @media (min-width: 1024px) {
           .mobile-logo { display: none; }
+        }
+
+        /* ---- LOGO: LEFT PANE (desktop) ---- */
+        .desktop-logo {
+          position: relative;
+          z-index: 10;
+          margin-bottom: 40px;
+        }
+
+        /* Mobile logo variant — simpler, centered */
+        .mobile-logo-lockup {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+        .mobile-logo-sub {
+          font-family: 'DM Mono', monospace;
+          font-size: 9px;
+          letter-spacing: 0.14em;
+          text-transform: uppercase;
+          color: #555;
+          margin-top: 4px;
+          text-align: center;
         }
 
         .form-eyebrow {
@@ -345,7 +367,12 @@ export default function LoginPage() {
           margin-bottom: 8px;
         }
 
-        .input-wrap { position: relative; }
+        /* ---- PASSWORD WRAPPER — FIX UTAMA ---- */
+        .input-wrap {
+          position: relative;
+          display: flex;
+          align-items: center;
+        }
 
         .field-input {
           display: block;
@@ -355,7 +382,7 @@ export default function LoginPage() {
           border-radius: 12px;
           padding: 14px 16px;
           font-family: 'Syne', sans-serif;
-          font-size: 16px; /* 16px mencegah iOS Safari auto-zoom saat focus */
+          font-size: 16px;
           color: #F0F0F0;
           outline: none;
           transition: border-color 0.2s, box-shadow 0.2s, background 0.2s;
@@ -368,20 +395,36 @@ export default function LoginPage() {
           box-shadow: 0 0 0 3px rgba(200,241,53,0.08);
         }
 
+        /* Input password — padding kanan lebih besar biar teks tidak nabrak ikon */
+        .field-input--pw {
+          padding-right: 52px;
+        }
+
+        /* Toggle button — posisi absolute di dalam flex container */
         .pw-toggle {
           position: absolute;
-          inset-y: 0;
           right: 0;
+          top: 0;
+          bottom: 0;
+          width: 48px;
           display: flex;
           align-items: center;
-          padding-right: 14px;
+          justify-content: center;
           background: none;
           border: none;
           cursor: pointer;
           color: #444;
           transition: color 0.2s;
+          border-radius: 0 12px 12px 0;
+          flex-shrink: 0;
+          /* Pastikan ikon tidak stretch */
+          line-height: 0;
         }
         .pw-toggle:hover { color: #C8F135; }
+        .pw-toggle svg {
+          display: block;
+          pointer-events: none;
+        }
 
         /* Remember row */
         .remember-row {
@@ -494,6 +537,11 @@ export default function LoginPage() {
           border-radius: 50%;
           background: #2D2D2D;
         }
+
+        @keyframes spin {
+          from { transform: rotate(0deg); }
+          to   { transform: rotate(360deg); }
+        }
       `}</style>
 
       <div className="login-root">
@@ -508,13 +556,22 @@ export default function LoginPage() {
           <div className="orb-2" />
           <div className="accent-number" aria-hidden>50</div>
 
-          {/* TOP: LOGO + HEADLINE */}
+          {/* TOP: LOGO (BESAR) + HEADLINE */}
           <div style={{ position: 'relative', zIndex: 10 }}>
-            <img
-              src="/images/marusindologo.png"
-              alt="PT Marusindo"
-              style={{ height: '36px', objectFit: 'contain', marginBottom: '32px', filter: 'brightness(0) invert(1)' }}
-            />
+            {/* Logo besar, warna asli */}
+            <div className="desktop-logo">
+              <img
+                src="/images/marusindologo.png"
+                alt="PT Marusindo"
+                style={{
+                  height: '56px',
+                  width: 'auto',
+                  objectFit: 'contain',
+                  display: 'block',
+                }}
+              />
+            </div>
+
             <div className="tag-pill">
               <span className="tag-pill-dot" />
               Enterprise Asset Platform
@@ -558,13 +615,20 @@ export default function LoginPage() {
         <div className="right-pane">
           <div className="form-wrap">
 
-            {/* Mobile logo */}
+            {/* Mobile logo — warna asli */}
             <div className="mobile-logo">
-              <img
-                src="/images/marusindologo.png"
-                alt="PT Marusindo"
-                style={{ height: '36px', objectFit: 'contain', filter: 'brightness(0) invert(1)' }}
-              />
+              <div className="mobile-logo-lockup">
+                <img
+                  src="/images/marusindologo.png"
+                  alt="PT Marusindo"
+                  style={{
+                    height: '48px',
+                    width: 'auto',
+                    objectFit: 'contain',
+                    display: 'block',
+                  }}
+                />
+              </div>
             </div>
 
             <p className="form-eyebrow">// Marusindo Integrated System</p>
@@ -598,11 +662,11 @@ export default function LoginPage() {
 
               <div className="field">
                 <label className="field-label" htmlFor="password">Kata Sandi</label>
+                {/* input-wrap sebagai flex container biar ikon selalu center vertikal */}
                 <div className="input-wrap">
                   <input
                     id="password"
-                    className="field-input"
-                    style={{ paddingRight: '46px' }}
+                    className="field-input field-input--pw"
                     type={showPassword ? "text" : "password"}
                     required
                     value={password}
@@ -612,6 +676,7 @@ export default function LoginPage() {
                   <button
                     type="button"
                     className="pw-toggle"
+                    aria-label={showPassword ? "Sembunyikan kata sandi" : "Tampilkan kata sandi"}
                     onClick={() => setShowPassword(!showPassword)}
                   >
                     {showPassword ? <EyeOffIcon /> : <EyeIcon />}
