@@ -5,18 +5,18 @@ generator client {
 }
 
 datasource db {
-  provider = "mysql"
-  url      = env("DATABASE_URL")
+  provider          = "mysql"
+  url               = env("DATABASE_URL")
   shadowDatabaseUrl = env("SHADOW_DATABASE_URL")
 }
 
 // ==========================================
-// ENUMS (Standarisasi Nilai)
+// ENUMS
 // ==========================================
 
 enum Role {
-  SUPERADMIN // Untuk orang-orang PT. Marusindo
-  CLIENT     // Untuk klien seperti PT. Delta
+  SUPERADMIN
+  CLIENT
 }
 
 enum EmailStatus {
@@ -26,21 +26,27 @@ enum EmailStatus {
   BOUNCED
 }
 
+enum EmailTemplateType {
+  SINGLE  // Template untuk notif satu alat
+  BULK    // Template untuk notif massal
+}
+
 // ==========================================
 // MODELS
 // ==========================================
 
 model Company {
-  id          String   @id @default(uuid())
-  name        String   @unique
-  emailPic    String?  // Email utama untuk dikirimi peringatan expired
-  isActive    Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id        String   @id @default(uuid())
+  name      String   @unique
+  emailPic  String?
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  users       User[]
-  equipments  Equipment[]
-  emailLogs   EmailLog[]
+  users          User[]
+  equipments     Equipment[]
+  emailLogs      EmailLog[]
+  emailTemplates EmailTemplate[]
 
   @@map("companies")
 }
@@ -48,66 +54,116 @@ model Company {
 model User {
   id        String   @id @default(uuid())
   email     String   @unique
-  password  String   // Pastikan lo hash pakai bcrypt/argon2
+  password  String
   role      Role     @default(CLIENT)
-  
-  // Relasi ke Company (Kunci Isolasi Data)
   companyId String
   company   Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  // Index untuk mempercepat query saat login
   @@index([companyId])
   @@map("users")
 }
 
 model Equipment {
-  id             String   @id @default(uuid())
-  
-  // Relasi ke Company (Milik Siapa Alat Ini?)
+  id             String    @id @default(uuid())
   companyId      String
-  company        Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  
-  // Data Alat dari Excel
-  location       String?  // LOKASI (Bisa null karena di CSV lo ada yang kosong)
-  name           String   // ALAT
-  permitNumber   String?  // NOMOR IZIN
-  serialNumber   String?  // NOMOR SERIE
-  inspectionDate DateTime // TANGGAL PEMERIKSAAN
-  expiryDate     DateTime // TANGGAL HABIS
-  
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  company        Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
 
+  // Field lama
+  name           String
+  location       String?
+  permitNumber   String?
+  serialNumber   String?
+  inspectionDate DateTime
+  expiryDate     DateTime
+
+  // Field baru
+  area           String?
+  brand          String?
+  capacity       String?
+  description    String?   @db.Text
+
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  suket          Suket[]
+  laporan        Laporan[]
   emailLogs      EmailLog[]
-  certificateUrl String? @db.Text // Bisa nyimpan URL GDrive atau URL Gambar
 
   @@index([companyId])
-  // INDEX INI WAJIB: Tanpa ini, cron job pencari jatuh tempo akan bikin server lambat
-  @@index([expiryDate]) 
+  @@index([expiryDate])
   @@map("equipments")
-  
+}
+
+model Suket {
+  id          String    @id @default(uuid())
+  equipmentId String
+  equipment   Equipment @relation(fields: [equipmentId], references: [id], onDelete: Cascade)
+  period      String
+  fileUrl     String    @db.Text
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([equipmentId])
+  @@map("sukets")
+}
+
+model Laporan {
+  id          String    @id @default(uuid())
+  equipmentId String
+  equipment   Equipment @relation(fields: [equipmentId], references: [id], onDelete: Cascade)
+  period      String
+  fileUrl     String    @db.Text
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@unique([equipmentId, period])
+  @@index([equipmentId])
+  @@map("laporans")
 }
 
 model EmailLog {
   id           String      @id @default(uuid())
-  
   companyId    String
   company      Company     @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  
   equipmentId  String
   equipment    Equipment   @relation(fields: [equipmentId], references: [id], onDelete: Cascade)
-  
   status       EmailStatus @default(PENDING)
   sentAt       DateTime?
-  errorMessage String?     @db.Text // Simpan log error dari layanan email (SendGrid/SMTP)
-  
+  errorMessage String?     @db.Text
   createdAt    DateTime    @default(now())
   updatedAt    DateTime    @updatedAt
 
   @@index([companyId])
-  @@index([status]) // Mempercepat query worker saat mencari email PENDING
+  @@index([status])
   @@map("email_logs")
+}
+
+// Template email yang bisa di-custom admin
+// companyId = null  → template GLOBAL (default untuk semua klien)
+// companyId = ada   → template OVERRIDE untuk klien tertentu
+// type = SINGLE     → dipakai di notify per-alat
+// type = BULK       → dipakai di notify massal
+model EmailTemplate {
+  id          String            @id @default(uuid())
+
+  // Null = global, ada isi = override per klien
+  companyId   String?
+  company     Company?          @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  type        EmailTemplateType
+
+  senderName  String            @default("M-Track Marusindo")
+  subject     String            @db.Text
+  introText   String            @db.Text
+  footerText  String            @db.Text
+
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+
+  // Satu template per tipe per perusahaan (atau per tipe untuk global)
+  @@unique([companyId, type])
+  @@index([companyId])
+  @@map("email_templates")
 }

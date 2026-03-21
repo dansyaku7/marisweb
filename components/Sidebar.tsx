@@ -5,7 +5,8 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
   LayoutDashboard, Building2, Wrench,
-  BellRing, LogOut, X, AlertTriangle, Loader2
+  BellRing, LogOut, X, AlertTriangle, Loader2,
+  LetterText
 } from "lucide-react";
 
 interface SidebarProps {
@@ -36,6 +37,7 @@ export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
     { name: "Manajemen Klien",     href: "/dashboard/companies",    icon: Building2,       show: isSuperAdmin },
     { name: "Data Alat & Inspeksi",href: "/dashboard/equipments",   icon: Wrench,          show: true },
     { name: "Log Notifikasi",      href: "/dashboard/logs",         icon: BellRing,        show: true },
+    { name: "Email Templates",     href: "/dashboard/settings",     icon: LetterText,       show: isSuperAdmin },
   ];
 
   const handleLogoutAction = async () => {
@@ -351,7 +353,7 @@ export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
           border: 1.5px solid rgba(220,60,60,0.12);
           font-family: 'Syne', sans-serif;
           font-size: 12px;
-          font-weight: 800;
+          font-weight: 700;
           color: #C07070;
           letter-spacing: 0.06em;
           text-transform: uppercase;
