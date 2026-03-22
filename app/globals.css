@@ -116,8 +116,22 @@
   * {
     @apply border-border outline-ring/50;
   }
+
+  /*
+    FIX LOGIN PAGE CENTERING — Vercel / Production
+    html & body harus punya height yang terdefinisi
+    supaya .login-root bisa pakai height: 100vh dengan bener.
+    overflow: clip lebih aman dari hidden karena ga ganggu sticky/fixed elemen
+    di halaman lain (dashboard, dll).
+  */
+  html {
+    height: 100%;
+  }
   body {
     @apply bg-background text-foreground;
+    height: 100%;
+    /* clip: ga ganggu scroll di halaman dashboard */
+    overflow: clip;
   }
 }
 
