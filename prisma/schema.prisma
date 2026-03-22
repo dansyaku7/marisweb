@@ -27,8 +27,8 @@ enum EmailStatus {
 }
 
 enum EmailTemplateType {
-  SINGLE  // Template untuk notif satu alat
-  BULK    // Template untuk notif massal
+  SINGLE
+  BULK
 }
 
 // ==========================================
@@ -39,6 +39,9 @@ model Company {
   id        String   @id @default(uuid())
   name      String   @unique
   emailPic  String?
+  // Field baru — nullable, data lama aman
+  namePic   String?  // Nama PIC (Person in Charge)
+  phonePic  String?  // No HP PIC
   isActive  Boolean  @default(true)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -70,7 +73,6 @@ model Equipment {
   companyId      String
   company        Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
 
-  // Field lama
   name           String
   location       String?
   permitNumber   String?
@@ -78,7 +80,6 @@ model Equipment {
   inspectionDate DateTime
   expiryDate     DateTime
 
-  // Field baru
   area           String?
   brand          String?
   capacity       String?
@@ -140,29 +141,18 @@ model EmailLog {
   @@map("email_logs")
 }
 
-// Template email yang bisa di-custom admin
-// companyId = null  → template GLOBAL (default untuk semua klien)
-// companyId = ada   → template OVERRIDE untuk klien tertentu
-// type = SINGLE     → dipakai di notify per-alat
-// type = BULK       → dipakai di notify massal
 model EmailTemplate {
   id          String            @id @default(uuid())
-
-  // Null = global, ada isi = override per klien
   companyId   String?
   company     Company?          @relation(fields: [companyId], references: [id], onDelete: Cascade)
-
   type        EmailTemplateType
-
   senderName  String            @default("M-Track Marusindo")
   subject     String            @db.Text
   introText   String            @db.Text
   footerText  String            @db.Text
-
   createdAt   DateTime          @default(now())
   updatedAt   DateTime          @updatedAt
 
-  // Satu template per tipe per perusahaan (atau per tipe untuk global)
   @@unique([companyId, type])
   @@index([companyId])
   @@map("email_templates")

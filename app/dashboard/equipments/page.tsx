@@ -9,16 +9,15 @@ import {
 } from "lucide-react";
 import * as XLSX from "xlsx-js-style";
 import DocumentDrawer from "@/components/equipment/DocumentDrawer";
+import EquipmentDetailPanel from "@/components/equipment/EquipmentDetailPanel";
 import { useConfirm } from "@/components/providers/confirm-dialog";
 
 // ============================================================
 // TIPE DATA
 // ============================================================
 interface Company { id: string; name: string; }
-
 interface Suket   { id: string; period: string; fileUrl: string; createdAt: string; }
 interface Laporan { id: string; period: string; fileUrl: string; createdAt?: string; }
-
 interface Equipment {
   id: string; name: string; permitNumber: string; serialNumber: string;
   location: string | null; inspectionDate: string; expiryDate: string;
@@ -27,8 +26,9 @@ interface Equipment {
   brand?:       string | null;
   capacity?:    string | null;
   description?: string | null;
-  suket?:   Suket[];
-  laporan?: Laporan[];
+  suket?:       Suket[];
+  laporan?:     Laporan[];
+  company?:     { name: string };
 }
 
 // ============================================================
@@ -73,24 +73,32 @@ export default function EquipmentsPage() {
   const [companies, setCompanies]                 = useState<Company[]>([]);
   const [selectedCompanyId, setSelectedCompanyId] = useState<string | null>(null);
   const [searchCompanyText, setSearchCompanyText] = useState("");
-  const [equipments, setEquipments]               = useState<Equipment[]>([]);
-  const [isLoadingEq, setIsLoadingEq]             = useState(false);
-  const [searchEqText, setSearchEqText]           = useState("");
-  const [currentPage, setCurrentPage]             = useState(1);
-  const itemsPerPage = 10;
+  const [companyPage, setCompanyPage]             = useState(1);
+  const companiesPerPage = 5;
 
-  const fileInputRef                            = useRef<HTMLInputElement>(null);
-  const [isUploading, setIsUploading]           = useState(false);
-  const [statusMsg, setStatusMsg]               = useState<{ type: "error" | "success"; text: string } | null>(null);
+  const [equipments, setEquipments]     = useState<Equipment[]>([]);
+  const [isLoadingEq, setIsLoadingEq]   = useState(false);
+  const [searchEqText, setSearchEqText] = useState("");
+  const [eqPage, setEqPage]             = useState(1);
+  const eqPerPage = 10;
 
+  const fileInputRef                        = useRef<HTMLInputElement>(null);
+  const [isUploading, setIsUploading]       = useState(false);
+  const [statusMsg, setStatusMsg]           = useState<{ type: "error" | "success"; text: string } | null>(null);
+
+  // Panel & drawer
+  const [panelOpen, setPanelOpen]   = useState(false);
+  const [panelEq, setPanelEq]       = useState<Equipment | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [activeEq, setActiveEq]     = useState<Equipment | null>(null);
 
+  // Edit modal
   const [isEditModalOpen, setIsEditModalOpen]   = useState(false);
   const [editingEq, setEditingEq]               = useState<Equipment | null>(null);
   const [isSubmittingEdit, setIsSubmittingEdit] = useState(false);
 
-  const [isAddModalOpen, setIsAddModalOpen]   = useState(false);
+  // Add modal
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [newEq, setNewEq] = useState({
     name: "", location: "", permitNumber: "", serialNumber: "",
     inspectionDate: "", expiryDate: "",
@@ -98,6 +106,7 @@ export default function EquipmentsPage() {
   });
   const [isSubmittingAdd, setIsSubmittingAdd] = useState(false);
 
+  // Notify & select
   const [notifyingId, setNotifyingId]               = useState<string | null>(null);
   const [isNotifyingBulkAll, setIsNotifyingBulkAll] = useState(false);
   const [selectedEqIds, setSelectedEqIds]           = useState<string[]>([]);
@@ -116,10 +125,12 @@ export default function EquipmentsPage() {
   useEffect(() => {
     if (!selectedCompanyId) return;
     fetchEquipments(selectedCompanyId);
-    setSearchEqText(""); setCurrentPage(1); setSelectedEqIds([]);
+    setSearchEqText(""); setEqPage(1); setSelectedEqIds([]);
   }, [selectedCompanyId]);
 
-  useEffect(() => { setCurrentPage(1); }, [searchEqText, searchCompanyText]);
+  // Reset page kalau search berubah
+  useEffect(() => { setEqPage(1); },      [searchEqText]);
+  useEffect(() => { setCompanyPage(1); }, [searchCompanyText]);
 
   // ── Fetch ──
   const fetchCompanies = async () => {
@@ -138,6 +149,10 @@ export default function EquipmentsPage() {
       if (userRole === "SUPERADMIN" && companyId)
         data = data.filter((eq) => eq.companyId === companyId);
       setEquipments(data);
+      if (panelEq) {
+        const updated = data.find((eq) => eq.id === panelEq.id);
+        if (updated) setPanelEq(updated);
+      }
       if (activeEq) {
         const updated = data.find((eq) => eq.id === activeEq.id);
         if (updated) setActiveEq(updated);
@@ -217,19 +232,17 @@ export default function EquipmentsPage() {
   // ── Delete ──
   const handleDeleteEq = async (id: string, name: string) => {
     const ok = await confirm({
-      variant:      "danger",
-      title:        "Hapus Data Alat",
-      description:  `Alat "${name}" akan dihapus permanen beserta semua dokumen terkait. Tindakan ini tidak bisa dibatalkan.`,
-      confirmLabel: "Ya, Hapus",
-      cancelLabel:  "Batal",
+      variant: "danger", title: "Hapus Data Alat",
+      description: `Alat "${name}" akan dihapus permanen beserta semua dokumen terkait. Tindakan ini tidak bisa dibatalkan.`,
+      confirmLabel: "Ya, Hapus", cancelLabel: "Batal",
     });
     if (!ok) return;
-
     setDeletingId(id);
     try {
       const res = await fetch(`/api/equipments/${id}`, { method: "DELETE" });
       if (!res.ok) throw new Error("Gagal menghapus data alat.");
       setStatusMsg({ type: "success", text: "Alat berhasil dihapus." });
+      if (panelEq?.id === id) setPanelOpen(false);
       fetchEquipments(selectedCompanyId);
       setSelectedEqIds((prev) => prev.filter((x) => x !== id));
     } catch (err: any) {
@@ -291,14 +304,11 @@ export default function EquipmentsPage() {
   // ── Notify single ──
   const handleManualNotify = async (eq: Equipment) => {
     const ok = await confirm({
-      variant:      "info",
-      title:        "Kirim Notifikasi",
-      description:  `Kirim email peringatan manual ke klien untuk alat "${eq.name}"?`,
-      confirmLabel: "Ya, Kirim",
-      cancelLabel:  "Batal",
+      variant: "info", title: "Kirim Notifikasi",
+      description: `Kirim email peringatan manual ke klien untuk alat "${eq.name}"?`,
+      confirmLabel: "Ya, Kirim", cancelLabel: "Batal",
     });
     if (!ok) return;
-
     setNotifyingId(eq.id);
     try {
       const res = await fetch(`/api/equipments/${eq.id}/notify`, { method: "POST" });
@@ -314,19 +324,16 @@ export default function EquipmentsPage() {
   // ── Notify bulk ──
   const handleNotifyBulk = async () => {
     if (!selectedCompanyId) return;
-
     const isCustom = selectedEqIds.length > 0;
     const ok = await confirm({
-      variant:      "info",
-      title:        isCustom ? "Kirim Notifikasi Pilihan" : "Alert Expired",
-      description:  isCustom
+      variant: "info",
+      title: isCustom ? "Kirim Notifikasi Pilihan" : "Alert Expired",
+      description: isCustom
         ? `Kirim notifikasi email untuk ${selectedEqIds.length} alat yang dipilih?`
         : "Tidak ada alat dipilih. Kirim peringatan ke semua alat yang sudah kedaluwarsa?",
-      confirmLabel: "Ya, Kirim",
-      cancelLabel:  "Batal",
+      confirmLabel: "Ya, Kirim", cancelLabel: "Batal",
     });
     if (!ok) return;
-
     setIsNotifyingBulkAll(true); setStatusMsg(null);
     try {
       const res  = await fetch(`/api/companies/${selectedCompanyId}/notify-expired`, {
@@ -355,12 +362,19 @@ export default function EquipmentsPage() {
     else setSelectedEqIds((prev) => [...prev, ...ids.filter((id) => !prev.includes(id))]);
   };
 
-  // ── Derived ──
-  const filteredCompanies  = companies.filter((c) =>
+  // ── Derived: companies ──
+  const filteredCompanies   = companies.filter((c) =>
     c.name.toLowerCase().includes(searchCompanyText.toLowerCase())
   );
-  const selectedCompany    = companies.find((c) => c.id === selectedCompanyId);
-  const filteredEquipments = equipments.filter((eq) => {
+  const totalCompanyPages   = Math.max(1, Math.ceil(filteredCompanies.length / companiesPerPage));
+  const paginatedCompanies  = filteredCompanies.slice(
+    (companyPage - 1) * companiesPerPage,
+    companyPage * companiesPerPage
+  );
+  const selectedCompany     = companies.find((c) => c.id === selectedCompanyId);
+
+  // ── Derived: equipments ──
+  const filteredEquipments  = equipments.filter((eq) => {
     const t = searchEqText.toLowerCase();
     return eq.name?.toLowerCase().includes(t)
       || eq.permitNumber?.toLowerCase().includes(t)
@@ -368,12 +382,13 @@ export default function EquipmentsPage() {
       || eq.brand?.toLowerCase().includes(t)
       || eq.area?.toLowerCase().includes(t);
   });
-  const totalPages          = Math.ceil(filteredEquipments.length / itemsPerPage) || 1;
+  const totalEqPages        = Math.max(1, Math.ceil(filteredEquipments.length / eqPerPage));
   const paginatedEquipments = filteredEquipments.slice(
-    (currentPage - 1) * itemsPerPage, currentPage * itemsPerPage
+    (eqPage - 1) * eqPerPage,
+    eqPage * eqPerPage
   );
 
-  // ── Reusable form fields ──
+  // ── Form fields reusable ──
   const renderFormFields = (
     data: Partial<Equipment> & { inspectionDate?: string; expiryDate?: string },
     onChange: (key: string, val: string) => void
@@ -470,8 +485,8 @@ export default function EquipmentsPage() {
         .eq-card-header-icon { width:28px; height:28px; background:rgba(240,165,0,0.08); border:1.5px solid rgba(240,165,0,0.18); border-radius:7px; display:flex; align-items:center; justify-content:center; color:#C87A00; flex-shrink:0; }
         .eq-card-title  { font-size:13px; font-weight:600; color:#555550; }
 
-        .eq-company-list { padding:8px; max-height:480px; overflow-y:auto; display:flex; flex-direction:column; gap:2px; }
-        .eq-company-list::-webkit-scrollbar { width:0; }
+        .eq-company-list { padding:8px; display:flex; flex-direction:column; gap:2px; }
+
         .eq-company-btn       { width:100%; text-align:left; padding:10px 14px; border-radius:9px; background:transparent; border:1.5px solid transparent; font-family:inherit; font-size:13px; font-weight:500; color:#888880; cursor:pointer; display:flex; align-items:center; justify-content:space-between; gap:8px; transition:0.15s; }
         .eq-company-btn:hover { background:#F5F3EE; color:#555550; border-color:#EAE7DF; }
         .eq-company-btn.active{ background:rgba(240,165,0,0.08); border-color:rgba(240,165,0,0.22); color:#C87A00; font-weight:600; }
@@ -492,16 +507,18 @@ export default function EquipmentsPage() {
         .eq-tool-btn:disabled { opacity:0.35; cursor:not-allowed; }
         .eq-selected-tag { font-size:11px; font-weight:500; color:#C87A00; background:rgba(240,165,0,0.07); border:1px solid rgba(240,165,0,0.18); border-radius:6px; padding:3px 9px; white-space:nowrap; font-family:monospace; }
 
-        .eq-table-wrap { flex:1; overflow:auto; min-height:420px; max-height:560px; }
+        .eq-table-wrap { flex:1; overflow:auto; min-height:420px; }
         .eq-table      { width:100%; border-collapse:collapse; text-align:left; }
         .eq-table thead { position:sticky; top:0; z-index:5; background:#FAFAF7; }
         .eq-table thead th { padding:12px 20px; font-size:10px; font-weight:500; text-transform:uppercase; letter-spacing:0.1em; color:#AAAAAA; border-bottom:1px solid #F0EDE4; white-space:nowrap; }
-        .eq-table tbody tr { border-bottom:1px solid #F5F3EE; transition:0.12s; }
+        .eq-table tbody tr { border-bottom:1px solid #F5F3EE; transition:background 0.12s; }
         .eq-table tbody tr:last-child { border-bottom:none; }
         .eq-table tbody tr:hover td   { background:#FDFCF8; }
+        .eq-table tbody tr.active-row td { background:rgba(240,165,0,0.04) !important; }
         .eq-table td { padding:14px 20px; vertical-align:middle; }
 
-        .eq-eq-name   { font-size:13px; font-weight:600; color:#1A1A1A; }
+        .eq-eq-name   { font-size:13px; font-weight:600; color:#1A1A1A; cursor:pointer; display:inline; }
+        .eq-eq-name:hover { color:#C87A00; text-decoration:underline; text-underline-offset:3px; }
         .eq-eq-meta   { font-size:11px; color:#AAAAAA; margin-top:3px; font-family:monospace; }
         .eq-permit    { font-size:11px; color:#888880; font-family:monospace; }
         .eq-insp-date { font-size:11px; color:#BBBBBB; margin-top:3px; font-family:monospace; }
@@ -512,7 +529,7 @@ export default function EquipmentsPage() {
         .eq-badge.warning { background:rgba(240,165,0,0.08);   border:1px solid rgba(240,165,0,0.2);    color:#C87A00; }
         .eq-badge.danger  { background:rgba(220,60,60,0.07);   border:1px solid rgba(220,60,60,0.18);   color:#DC3C3C; }
 
-        .eq-empty       { display:flex; flex-direction:column; align-items:center; justify-content:center; height:100%; min-height:340px; text-align:center; padding:40px 20px; }
+        .eq-empty       { display:flex; flex-direction:column; align-items:center; justify-content:center; min-height:340px; text-align:center; padding:40px 20px; }
         .eq-empty-icon  { width:56px; height:56px; background:#F5F3EE; border:1.5px solid #E5E2D8; border-radius:14px; display:flex; align-items:center; justify-content:center; margin:0 auto 16px; color:#CCCCCC; }
         .eq-empty-title { font-size:14px; font-weight:600; color:#555550; margin:0 0 6px; }
         .eq-empty-desc  { font-size:12px; color:#AAAAAA; margin:0; }
@@ -527,10 +544,13 @@ export default function EquipmentsPage() {
         .doc-btn       { padding:5px 11px; font-size:11px; font-weight:500; border-radius:7px; cursor:pointer; display:inline-flex; align-items:center; gap:6px; transition:0.2s; border:1.5px solid #E5E2D8; font-family:inherit; background:#F5F3EE; color:#888880; }
         .doc-btn:hover { background:rgba(240,165,0,0.08); border-color:rgba(240,165,0,0.25); color:#C87A00; }
 
-        .pagination-container { padding:12px 18px; border-top:1px solid #F0EDE4; background:#FAFAF7; display:flex; align-items:center; justify-content:space-between; }
-        .page-btn             { padding:6px 12px; font-size:11px; font-weight:500; border-radius:7px; background:#FFFFFF; border:1.5px solid #E5E2D8; color:#888880; cursor:pointer; display:flex; align-items:center; gap:4px; transition:0.2s; font-family:monospace; }
-        .page-btn:hover:not(:disabled) { background:rgba(240,165,0,0.07); border-color:rgba(240,165,0,0.25); color:#C87A00; }
-        .page-btn:disabled    { opacity:0.35; cursor:not-allowed; }
+        /* Pagination — shared style */
+        .pag-bar  { padding:10px 12px; border-top:1px solid #F0EDE4; background:#FAFAF7; display:flex; align-items:center; justify-content:space-between; gap:8px; }
+        .pag-info { font-size:10px; color:#AAAAAA; font-family:monospace; white-space:nowrap; }
+        .pag-btns { display:flex; gap:6px; }
+        .pag-btn  { padding:5px 10px; font-size:11px; font-weight:500; border-radius:7px; background:#FFFFFF; border:1.5px solid #E5E2D8; color:#888880; cursor:pointer; display:flex; align-items:center; gap:3px; transition:0.15s; font-family:monospace; }
+        .pag-btn:hover:not(:disabled) { background:rgba(240,165,0,0.07); border-color:rgba(240,165,0,0.25); color:#C87A00; }
+        .pag-btn:disabled { opacity:0.35; cursor:not-allowed; }
 
         .modal-overlay  { position:fixed; inset:0; background:rgba(0,0,0,0.25); backdrop-filter:blur(6px); display:flex; align-items:center; justify-content:center; z-index:100; padding:20px; overflow-y:auto; }
         .modal-content  { background:#FFFFFF; border:1.5px solid #EAE7DF; border-radius:16px; width:100%; max-width:560px; padding:24px; box-shadow:0 20px 50px rgba(0,0,0,0.1); animation:eq-fadeup 0.2s ease-out; margin:auto; max-height:90vh; overflow-y:auto; }
@@ -565,9 +585,11 @@ export default function EquipmentsPage() {
           )}
 
           <div className="eq-layout">
+            {/* ── SIDEBAR PERUSAHAAN ── */}
             {userRole === "SUPERADMIN" && (
               <div className="eq-left">
                 <div className="eq-card">
+                  {/* Header + search */}
                   <div className="eq-card-header" style={{ flexDirection: "column", alignItems: "stretch", gap: 10 }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                       <span className="eq-card-header-icon"><Building2 size={14} /></span>
@@ -577,9 +599,12 @@ export default function EquipmentsPage() {
                       <Search size={12} className="eq-search-icon" />
                       <input type="text" placeholder="Cari PT..." className="eq-search-input"
                         style={{ padding: "7px 10px 7px 30px", fontSize: 11 }}
-                        value={searchCompanyText} onChange={(e) => setSearchCompanyText(e.target.value)} />
+                        value={searchCompanyText}
+                        onChange={(e) => { setSearchCompanyText(e.target.value); setCompanyPage(1); }} />
                     </div>
                   </div>
+
+                  {/* List */}
                   <div className="eq-company-list">
                     {companies.length === 0 ? (
                       <div style={{ padding: "24px 14px", textAlign: "center" }}>
@@ -588,19 +613,40 @@ export default function EquipmentsPage() {
                       </div>
                     ) : filteredCompanies.length === 0 ? (
                       <p style={{ textAlign: "center", padding: "20px", color: "#AAAAAA", fontSize: 12 }}>Klien tidak ditemukan</p>
-                    ) : filteredCompanies.map((c) => (
-                      <button key={c.id} className={`eq-company-btn ${selectedCompanyId === c.id ? "active" : ""}`} onClick={() => setSelectedCompanyId(c.id)}>
-                        <span>{c.name}</span><ChevronRight size={14} style={{ flexShrink: 0 }} />
+                    ) : paginatedCompanies.map((c) => (
+                      <button key={c.id}
+                        className={`eq-company-btn ${selectedCompanyId === c.id ? "active" : ""}`}
+                        onClick={() => setSelectedCompanyId(c.id)}
+                      >
+                        <span>{c.name}</span>
+                        <ChevronRight size={14} style={{ flexShrink: 0 }} />
                       </button>
                     ))}
                   </div>
+
+                  {/* Pagination klien — selalu tampil */}
+                  <div className="pag-bar">
+                    <span className="pag-info">
+                      {filteredCompanies.length === 0 ? "0 klien" : `${(companyPage - 1) * companiesPerPage + 1}–${Math.min(companyPage * companiesPerPage, filteredCompanies.length)} / ${filteredCompanies.length}`}
+                    </span>
+                    <div className="pag-btns">
+                      <button className="pag-btn" disabled={companyPage === 1} onClick={() => setCompanyPage((p) => p - 1)}>
+                        <ChevronLeft size={12} /> Prev
+                      </button>
+                      <button className="pag-btn" disabled={companyPage === totalCompanyPages} onClick={() => setCompanyPage((p) => p + 1)}>
+                        Next <ChevronRight size={12} />
+                      </button>
+                    </div>
+                  </div>
                 </div>
+
                 <button className="eq-tool-btn amber" onClick={handleDownloadTemplate} style={{ justifyContent: "center", padding: 11, width: "100%" }}>
                   <Download size={14} /> Download Template
                 </button>
               </div>
             )}
 
+            {/* ── TABEL ALAT ── */}
             <div className="eq-right">
               <div className="eq-card" style={{ display: "flex", flexDirection: "column" }}>
                 <div className="eq-toolbar">
@@ -629,6 +675,7 @@ export default function EquipmentsPage() {
                   )}
                 </div>
 
+                {/* Tabel */}
                 <div className="eq-table-wrap">
                   {(!selectedCompanyId && userRole === "SUPERADMIN") ? (
                     <div className="eq-empty">
@@ -667,16 +714,22 @@ export default function EquipmentsPage() {
                           const status     = getStatus(eq.expiryDate);
                           const StatusIcon = status.icon;
                           const isSelected = selectedEqIds.includes(eq.id);
+                          const isActive   = panelEq?.id === eq.id && panelOpen;
                           const hasDocs    = (eq.suket?.length ?? 0) > 0 || (eq.laporan?.length ?? 0) > 0;
 
                           return (
-                            <tr key={eq.id} style={{ background: isSelected ? "#FDFCF8" : "transparent" }}>
+                            <tr key={eq.id}
+                              className={isActive ? "active-row" : ""}
+                              style={{ background: isSelected ? "#FDFCF8" : "transparent" }}
+                            >
                               <td style={{ width: 40, paddingRight: 0, textAlign: "center" }}>
                                 <input type="checkbox" style={{ cursor: "pointer", accentColor: "#F0A500" }}
                                   checked={isSelected} onChange={() => toggleSelectEq(eq.id)} />
                               </td>
                               <td>
-                                <p className="eq-eq-name">{eq.name}</p>
+                                <p className="eq-eq-name" onClick={() => { setPanelEq(eq); setPanelOpen(true); }}>
+                                  {eq.name}
+                                </p>
                                 <p className="eq-eq-meta">
                                   {[eq.brand, eq.area || eq.location].filter(Boolean).join(" · ") || "N/A"}
                                 </p>
@@ -701,15 +754,12 @@ export default function EquipmentsPage() {
                               </td>
                               <td style={{ textAlign: "center", verticalAlign: "middle" }}>
                                 <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
-                                  <button
-                                    onClick={() => { setActiveEq(eq); setDrawerOpen(true); }}
-                                    className="doc-btn"
+                                  <button onClick={() => { setActiveEq(eq); setDrawerOpen(true); }} className="doc-btn"
                                     style={{
                                       background:  hasDocs ? "rgba(34,160,100,0.07)" : "#F5F3EE",
                                       color:       hasDocs ? "#22A064" : "#888880",
                                       borderColor: hasDocs ? "rgba(34,160,100,0.2)" : "#E5E2D8",
-                                    }}
-                                  >
+                                    }}>
                                     <FolderOpen size={13} /> Dokumen
                                   </button>
                                   {userRole === "SUPERADMIN" && (
@@ -735,17 +785,18 @@ export default function EquipmentsPage() {
                   )}
                 </div>
 
-                {filteredEquipments.length > itemsPerPage && (
-                  <div className="pagination-container">
-                    <span style={{ fontSize: 11, color: "#AAAAAA", fontFamily: "monospace" }}>
-                      {(currentPage - 1) * itemsPerPage + 1}–{Math.min(currentPage * itemsPerPage, filteredEquipments.length)} dari {filteredEquipments.length}
+                {/* Pagination alat — selalu tampil kalau ada data */}
+                {filteredEquipments.length > 0 && (
+                  <div className="pag-bar">
+                    <span className="pag-info">
+                      {`${(eqPage - 1) * eqPerPage + 1}–${Math.min(eqPage * eqPerPage, filteredEquipments.length)} / ${filteredEquipments.length} alat`}
                     </span>
-                    <div style={{ display: "flex", gap: 8 }}>
-                      <button className="page-btn" disabled={currentPage === 1} onClick={() => setCurrentPage((p) => p - 1)}>
-                        <ChevronLeft size={14} /> Prev
+                    <div className="pag-btns">
+                      <button className="pag-btn" disabled={eqPage === 1} onClick={() => setEqPage((p) => p - 1)}>
+                        <ChevronLeft size={12} /> Prev
                       </button>
-                      <button className="page-btn" disabled={currentPage === totalPages} onClick={() => setCurrentPage((p) => p + 1)}>
-                        Next <ChevronRight size={14} />
+                      <button className="pag-btn" disabled={eqPage === totalEqPages} onClick={() => setEqPage((p) => p + 1)}>
+                        Next <ChevronRight size={12} />
                       </button>
                     </div>
                   </div>
@@ -755,6 +806,16 @@ export default function EquipmentsPage() {
           </div>
         </div>
       </div>
+
+      {/* ── DETAIL PANEL ── */}
+      <EquipmentDetailPanel
+        equipment={panelEq}
+        isOpen={panelOpen}
+        userRole={userRole}
+        onClose={() => setPanelOpen(false)}
+        onEdit={(eq) => { setPanelOpen(false); setEditingEq(eq); setIsEditModalOpen(true); }}
+        onDocument={(eq) => { setPanelOpen(false); setActiveEq(eq); setDrawerOpen(true); }}
+      />
 
       {/* ── DOCUMENT DRAWER ── */}
       <DocumentDrawer

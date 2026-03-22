@@ -4,33 +4,24 @@ import * as jwt from 'jsonwebtoken';
 import { cookies } from 'next/headers';
 import * as bcrypt from 'bcryptjs';
 
-// GET: Mengambil daftar semua klien (Hanya untuk Superadmin)
+// GET: Ambil daftar semua klien (Hanya SUPERADMIN)
 export async function GET() {
   try {
     const cookieStore = await cookies();
     const token = cookieStore.get('mtrack_session')?.value;
-
     if (!token) return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
 
-    const secret = process.env.JWT_SECRET;
+    const secret  = process.env.JWT_SECRET;
     const decoded = jwt.verify(token, secret!) as { role: string };
 
-    // OTORISASI MUTLAK: Tendang jika bukan SUPERADMIN
     if (decoded.role !== 'SUPERADMIN') {
       return NextResponse.json({ message: 'Akses ditolak. Anda bukan Administrator.' }, { status: 403 });
     }
 
-    // Tarik data perusahaan beserta jumlah alat yang mereka miliki
     const companies = await prisma.company.findMany({
-      where: { 
-        name: { not: 'PT. Marusindo' } // Jangan tampilkan Marusindo di daftar klien
-      },
-      include: {
-        _count: {
-          select: { equipments: true }
-        }
-      },
-      orderBy: { createdAt: 'desc' }
+      where:   { name: { not: 'PT. Marusindo' } },
+      include: { _count: { select: { equipments: true } } },
+      orderBy: { createdAt: 'desc' },
     });
 
     return NextResponse.json(companies, { status: 200 });
@@ -41,31 +32,30 @@ export async function GET() {
   }
 }
 
-// POST: Membuat Perusahaan Klien Baru + Akun Loginnya
+// POST: Buat Perusahaan Klien Baru + Akun Login
 export async function POST(request: Request) {
   try {
     const cookieStore = await cookies();
     const token = cookieStore.get('mtrack_session')?.value;
-
     if (!token) return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
 
-    const secret = process.env.JWT_SECRET;
+    const secret  = process.env.JWT_SECRET;
     const decoded = jwt.verify(token, secret!) as { role: string };
 
-    // OTORISASI MUTLAK
     if (decoded.role !== 'SUPERADMIN') {
       return NextResponse.json({ message: 'Akses ditolak.' }, { status: 403 });
     }
 
     const body = await request.json();
-    const { name, emailPic, password } = body;
+    const { name, emailPic, password, namePic, phonePic } = body;
 
-    // Validasi Input Dasar
     if (!name || !emailPic || !password) {
-      return NextResponse.json({ message: 'Nama perusahaan, email, dan password wajib diisi' }, { status: 400 });
+      return NextResponse.json(
+        { message: 'Nama perusahaan, email, dan password wajib diisi' },
+        { status: 400 }
+      );
     }
 
-    // Cek apakah email sudah dipakai (Email harus unik untuk login)
     const existingUser = await prisma.user.findUnique({ where: { email: emailPic } });
     if (existingUser) {
       return NextResponse.json({ message: 'Email PIC sudah terdaftar di sistem' }, { status: 400 });
@@ -73,25 +63,27 @@ export async function POST(request: Request) {
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // NESTED CREATE: Buat Company sekaligus User-nya dalam satu transaksi database
     const newCompany = await prisma.company.create({
       data: {
         name,
         emailPic,
         isActive: true,
+        // Field baru — null kalau tidak diisi
+        namePic:  namePic?.trim()  || null,
+        phonePic: phonePic?.trim() || null,
         users: {
           create: {
-            email: emailPic,
+            email:    emailPic,
             password: hashedPassword,
-            role: 'CLIENT' // Paksa role menjadi CLIENT, jangan percaya input dari frontend
-          }
-        }
-      }
+            role:     'CLIENT',
+          },
+        },
+      },
     });
 
-    return NextResponse.json({ 
-      message: 'Perusahaan dan Akun Klien berhasil dibuat',
-      companyId: newCompany.id
+    return NextResponse.json({
+      message:   'Perusahaan dan Akun Klien berhasil dibuat',
+      companyId: newCompany.id,
     }, { status: 201 });
 
   } catch (error) {
