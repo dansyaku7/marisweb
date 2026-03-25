@@ -242,7 +242,7 @@ export default function LoginPage() {
           <div style={{ position: "relative", zIndex: 10 }}>
             <div className="testimonial">
               <p className="testimonial-text">
-                "Sistem peringatan dini dari Marusindo menyelamatkan pabrik kami dari denda keterlambatan perpanjangan izin alat berat."
+                "Sistem peringatan dini dari Marusindo Ajimandiri menyelamatkan pabrik kami dari denda keterlambatan perpanjangan izin alat berat."
               </p>
               <div className="testimonial-footer">
                 <div className="avatar-stack">
@@ -265,7 +265,7 @@ export default function LoginPage() {
                 style={{ height: "48px", width: "auto", objectFit: "contain", display: "block" }} />
             </div>
 
-            <p className="form-eyebrow">// Marusindo Integrated System</p>
+            <p className="form-eyebrow">// Marusindo Ajimandiri Integrated System</p>
             <h2 className="form-title">Selamat<br />Datang.</h2>
             <p className="form-subtitle">Masuk ke dasbor monitoring Anda.</p>
 
@@ -316,7 +316,7 @@ export default function LoginPage() {
             <div className="form-footer">
               <p className="form-footer-text">
                 Butuh bantuan?{" "}
-                <a href="#" className="form-footer-link">Hubungi Administrator Marusindo</a>
+                <a href="#" className="form-footer-link">Hubungi Administrator Marusindo Ajimandiri</a>
               </p>
               <div className="version-badge">
                 <span className="version-badge-dot" />

@@ -80,13 +80,9 @@ function KpiCard({ variant, icon, label, value, unit, subtext, pulse = false, de
         boxShadow: "0 2px 12px rgba(0,0,0,0.05)",
       }}
     >
-      {/* Glow bg */}
       <div style={{ position: "absolute", inset: 0, background: s.glowColor, pointerEvents: "none" }} />
-
-      {/* Corner accent line */}
       <div style={{ position: "absolute", top: 0, left: 0, width: 3, height: "100%", background: s.accent, opacity: 0.6, borderRadius: "16px 0 0 16px" }} />
 
-      {/* Top row */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", position: "relative" }}>
         <div style={{ padding: 10, background: s.iconBg, borderRadius: 10, color: s.iconColor, display: "flex" }}>
           {icon}
@@ -99,7 +95,6 @@ function KpiCard({ variant, icon, label, value, unit, subtext, pulse = false, de
         )}
       </div>
 
-      {/* Bottom content */}
       <div style={{ marginTop: 20, position: "relative" }}>
         <p style={{ fontSize: 11, fontWeight: 600, color: s.labelColor, textTransform: "uppercase", letterSpacing: "0.12em", margin: "0 0 6px 0" }}>{label}</p>
         <div style={{ display: "flex", alignItems: "baseline", gap: 6 }}>
@@ -167,7 +162,7 @@ export default function DashboardPage() {
 
   if (loading)
     return (
-      <div style={{ display: "flex", height: "80vh", alignItems: "center", justifyContent: "center", background: "#FAFAF8" }}>
+      <div style={{ display: "flex", height: "100%", minHeight: "100vh", alignItems: "center", justifyContent: "center", background: "#FAFAF8" }}>
         <Loader2 style={{ width: 36, height: 36, color: "#F0A500", animation: "spin 1s linear infinite" }} />
       </div>
     );
@@ -179,7 +174,14 @@ export default function DashboardPage() {
     <>
       <style>{`
         .db-root * { box-sizing: border-box; }
-        .db-root { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
+        .db-root {
+          font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+          /* ✅ FIX UTAMA: pastikan bisa scroll secara vertikal */
+          height: 100%;
+          overflow-y: auto;
+          overflow-x: hidden;
+          -webkit-overflow-scrolling: touch; /* smooth scroll di iOS */
+        }
 
         @keyframes fadeSlideUp {
           from { opacity: 0; transform: translateY(14px); }
@@ -242,7 +244,6 @@ export default function DashboardPage() {
           font-weight: 500;
         }
 
-        /* Tabel */
         .db-card {
           background: #FFFFFF;
           border: 1.5px solid #E8E4DC;
@@ -322,7 +323,8 @@ export default function DashboardPage() {
         .section-line { flex: 1; height: 1px; background: #EDEAE3; }
       `}</style>
 
-      <div className="db-root" style={{ background: "#FAFAF8", minHeight: "100vh" }}>
+      {/* ✅ FIX: hapus minHeight: "100vh" dari sini, pindah ke CSS .db-root */}
+      <div className="db-root" style={{ background: "#FAFAF8" }}>
         <div className="db-inner">
 
           {/* ---- HEADER ---- */}
@@ -345,7 +347,6 @@ export default function DashboardPage() {
                 </p>
               </div>
 
-              {/* Date badge */}
               <div style={{ textAlign: "right" }}>
                 <p style={{ fontFamily: 'monospace', fontSize: 11, color: "#BBBBBB", textTransform: "uppercase", letterSpacing: "0.1em", margin: 0, fontWeight: 500 }}>{dateStr}</p>
                 <p style={{ fontFamily: 'monospace', fontSize: 11, color: "#C87A00", opacity: 0.8, margin: "4px 0 0 0", fontWeight: 500 }}>
@@ -357,7 +358,7 @@ export default function DashboardPage() {
             <div className="db-divider" />
           </div>
 
-          {/* ---- SECTION LABEL ---- */}
+          {/* ---- KPI SECTION LABEL ---- */}
           <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 16 }} className="db-section-title">
             <span className="section-label">// KPI Overview</span>
             <div className="section-line" />
@@ -404,14 +405,14 @@ export default function DashboardPage() {
             />
           </div>
 
-          {/* ---- SECTION LABEL ---- */}
+          {/* ---- URGENT SECTION LABEL ---- */}
           <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 16 }} className="db-section-title">
             <span className="section-label">// Urgent Action Required</span>
             <div className="section-line" />
           </div>
 
           {/* ---- URGENT TABLE ---- */}
-          <div className="db-card db-table-anim">
+          <div className="db-card db-table-anim" style={{ marginBottom: 40 }}>
             <div className="db-card-header">
               <h3 className="db-card-title">Alat-alat butuh pembaruan</h3>
               <Link href="/dashboard/equipments" className="db-card-link">
