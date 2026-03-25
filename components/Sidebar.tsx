@@ -86,7 +86,7 @@ export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
           }
         }
 
-        /* Grid texture — subtle warm tint */
+        /* Grid texture */
         .sb-grid {
           position: absolute;
           inset: 0;
@@ -182,7 +182,7 @@ export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
           border-radius: 12px;
           padding: 14px 16px;
           display: flex;
-          align-items: center;
+          align-items: flex-start; /* ✅ FIX: ganti center → flex-start agar avatar tetap di atas saat nama wrap */
           gap: 12px;
           position: relative;
           z-index: 1;
@@ -211,6 +211,7 @@ export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
           font-weight: 500;
           color: #C87A00;
           flex-shrink: 0;
+          margin-top: 2px; /* ✅ sedikit turun supaya sejajar dengan teks pertama */
         }
 
         .sb-user-info { flex: 1; min-width: 0; }
@@ -222,15 +223,17 @@ export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
           letter-spacing: 0.12em;
           margin-bottom: 3px;
         }
+
+        /* ✅ FIX UTAMA: hapus nowrap + ellipsis, biarkan wrap */
         .sb-user-name {
           font-size: 13px;
           font-weight: 700;
-          bold: 700;
           color: #1A1A1A;
-          white-space: nowrap;
-          overflow: hidden;
-          text-overflow: ellipsis;
+          white-space: normal;
+          word-break: break-word;
+          line-height: 1.35;
         }
+
         .sb-role-badge {
           display: inline-flex;
           align-items: center;
@@ -307,7 +310,6 @@ export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
         .sb-nav-item:not(.active) .sb-nav-icon { color: #CCCCCC; }
         .sb-nav-item:hover:not(.active) .sb-nav-icon { color: #999990; }
 
-        /* Active left bar */
         .sb-nav-item.active::before {
           content: '';
           position: absolute;
@@ -319,7 +321,6 @@ export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
 
         .sb-nav-label { flex: 1; }
 
-        /* Active dot */
         .sb-active-dot {
           width: 5px; height: 5px;
           border-radius: 50%;
