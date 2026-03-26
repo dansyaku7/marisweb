@@ -59,11 +59,9 @@ export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
   return (
     <>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800;900&family=DM+Mono:wght@400;500&display=swap');
-
         /* ---- SIDEBAR BASE ---- */
         .sb-root {
-          font-family: 'Syne', sans-serif;
+          font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
           position: fixed;
           inset-y: 0;
           left: 0;
@@ -149,14 +147,12 @@ export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
           letter-spacing: -0.02em;
         }
         .sb-logo-sub {
-          font-family: 'DM Mono', monospace;
-          font-weight: 500;
-          font-size: 9px;
-          color: #000000;
+          font-size: 10px;
+          font-weight: 600;
+          color: #1A1A1A;
           text-transform: uppercase;
-          letter-spacing: 0.18em;
+          letter-spacing: 0.1em;
           margin-top: 2px;
-          opacity: 0.9;
         }
 
         .sb-close-btn {
@@ -168,10 +164,10 @@ export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
           border: 1.5px solid #E5E2D8;
           border-radius: 8px;
           cursor: pointer;
-          color: #AAAAAA;
-          transition: color 0.2s, border-color 0.2s, background 0.2s;
+          color: #1A1A1A;
+          transition: border-color 0.2s, background 0.2s;
         }
-        .sb-close-btn:hover { color: #1A1A1A; border-color: #C8C0B0; background: #EDEAE3; }
+        .sb-close-btn:hover { border-color: #C8C0B0; background: #EDEAE3; }
         @media (min-width: 1024px) { .sb-close-btn { display: none; } }
 
         /* ---- USER CARD ---- */
@@ -182,7 +178,7 @@ export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
           border-radius: 12px;
           padding: 14px 16px;
           display: flex;
-          align-items: flex-start; /* ✅ FIX: ganti center → flex-start agar avatar tetap di atas saat nama wrap */
+          align-items: flex-start;
           gap: 12px;
           position: relative;
           z-index: 1;
@@ -206,27 +202,25 @@ export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
           display: flex;
           align-items: center;
           justify-content: center;
-          font-family: 'DM Mono', monospace;
-          font-size: 12px;
-          font-weight: 500;
+          font-size: 13px;
+          font-weight: 700;
           color: #C87A00;
           flex-shrink: 0;
-          margin-top: 2px; /* ✅ sedikit turun supaya sejajar dengan teks pertama */
+          margin-top: 2px;
         }
 
         .sb-user-info { flex: 1; min-width: 0; }
         .sb-user-label {
-          font-family: 'DM Mono', monospace;
-          font-size: 9px;
-          color: #BBBBBB;
+          font-size: 10px;
+          font-weight: 600;
+          color: #555550;
           text-transform: uppercase;
-          letter-spacing: 0.12em;
+          letter-spacing: 0.05em;
           margin-bottom: 3px;
         }
 
-        /* ✅ FIX UTAMA: hapus nowrap + ellipsis, biarkan wrap */
         .sb-user-name {
-          font-size: 13px;
+          font-size: 14px;
           font-weight: 700;
           color: #1A1A1A;
           white-space: normal;
@@ -241,13 +235,12 @@ export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
           background: rgba(240,165,0,0.08);
           border: 1px solid rgba(240,165,0,0.2);
           border-radius: 999px;
-          padding: 2px 8px;
-          font-family: 'DM Mono', monospace;
-          font-size: 9px;
+          padding: 3px 8px;
+          font-size: 10px;
           color: #C87A00;
-          letter-spacing: 0.08em;
+          letter-spacing: 0.05em;
           text-transform: uppercase;
-          font-weight: 600;
+          font-weight: 700;
         }
         .sb-role-badge.admin {
           background: rgba(200,100,0,0.08);
@@ -258,14 +251,13 @@ export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
         /* ---- SECTION DIVIDER ---- */
         .sb-section-label {
           padding: 20px 20px 8px;
-          font-family: 'DM Mono', monospace;
-          font-size: 9px;
-          color: #CCCCCC;
+          font-size: 11px;
+          color: #1A1A1A;
           text-transform: uppercase;
-          letter-spacing: 0.18em;
+          letter-spacing: 0.1em;
           position: relative;
           z-index: 1;
-          font-weight: 500;
+          font-weight: 700;
         }
 
         /* ---- NAV ---- */
@@ -287,9 +279,9 @@ export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
           gap: 12px;
           padding: 11px 14px;
           border-radius: 10px;
-          font-size: 13px;
-          font-weight: 700;
-          color: #AAAAAA;
+          font-size: 14px;
+          font-weight: 600;
+          color: #1A1A1A;
           text-decoration: none;
           transition: background 0.15s, color 0.15s, border-color 0.15s;
           position: relative;
@@ -298,17 +290,18 @@ export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
         }
         .sb-nav-item:hover {
           background: #F5F3EE;
-          color: #555550;
+          color: #000000;
           border-color: #EAE7DF;
         }
         .sb-nav-item.active {
           background: rgba(240,165,0,0.08);
           border-color: rgba(240,165,0,0.2);
           color: #C87A00;
+          font-weight: 700;
         }
         .sb-nav-item.active .sb-nav-icon { color: #F0A500; }
-        .sb-nav-item:not(.active) .sb-nav-icon { color: #CCCCCC; }
-        .sb-nav-item:hover:not(.active) .sb-nav-icon { color: #999990; }
+        .sb-nav-item:not(.active) .sb-nav-icon { color: #1A1A1A; }
+        .sb-nav-item:hover:not(.active) .sb-nav-icon { color: #000000; }
 
         .sb-nav-item.active::before {
           content: '';
@@ -322,7 +315,7 @@ export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
         .sb-nav-label { flex: 1; }
 
         .sb-active-dot {
-          width: 5px; height: 5px;
+          width: 6px; height: 6px;
           border-radius: 50%;
           background: #F0A500;
           flex-shrink: 0;
@@ -352,11 +345,11 @@ export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
           border-radius: 10px;
           background: rgba(220,60,60,0.05);
           border: 1.5px solid rgba(220,60,60,0.12);
-          font-family: 'Syne', sans-serif;
-          font-size: 12px;
+          font-family: inherit;
+          font-size: 13px;
           font-weight: 700;
           color: #C07070;
-          letter-spacing: 0.06em;
+          letter-spacing: 0.05em;
           text-transform: uppercase;
           cursor: pointer;
           transition: background 0.2s, color 0.2s, border-color 0.2s;
@@ -420,14 +413,14 @@ export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
         }
         .sb-modal-title {
           font-size: 18px;
-          font-weight: 900;
+          font-weight: 700;
           color: #1A1A1A;
           margin: 0 0 8px 0;
         }
         .sb-modal-desc {
-          font-size: 13px;
-          color: #AAAAAA;
-          font-weight: 600;
+          font-size: 14px;
+          color: #555550;
+          font-weight: 500;
           margin: 0;
           line-height: 1.6;
         }
@@ -442,14 +435,14 @@ export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
           background: #F5F3EE;
           border: 1.5px solid #E5E2D8;
           border-radius: 10px;
-          font-family: 'Syne', sans-serif;
+          font-family: inherit;
           font-size: 13px;
-          font-weight: 800;
-          color: #888880;
+          font-weight: 700;
+          color: #1A1A1A;
           cursor: pointer;
           transition: background 0.2s, color 0.2s;
         }
-        .sb-btn-cancel:hover:not(:disabled) { background: #EDEAE3; color: #333; }
+        .sb-btn-cancel:hover:not(:disabled) { background: #EDEAE3; color: #000000; }
         .sb-btn-cancel:disabled { opacity: 0.4; cursor: not-allowed; }
 
         .sb-btn-confirm {
@@ -458,9 +451,9 @@ export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
           background: rgba(220,60,60,0.08);
           border: 1.5px solid rgba(220,60,60,0.2);
           border-radius: 10px;
-          font-family: 'inherit', sans-serif;
+          font-family: inherit;
           font-size: 13px;
-          font-weight: 800;
+          font-weight: 700;
           color: #DC3C3C;
           cursor: pointer;
           display: flex;
