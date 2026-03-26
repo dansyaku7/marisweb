@@ -270,7 +270,9 @@ export default function DocumentDrawer({
       setSuccessMsg("Laporan berhasil dihapus.");
       onDocumentSaved?.();
     } catch (err: any) { alert(err.message); } finally { setIsDeletingLaporanId(null); }
-  }; = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  };
+
+  const handleToggleProsesDinas = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!equipment) return;
     const newVal = e.target.checked;
     setIsTogglingDinas(true);
