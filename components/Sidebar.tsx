@@ -458,7 +458,7 @@ export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
           background: rgba(220,60,60,0.08);
           border: 1.5px solid rgba(220,60,60,0.2);
           border-radius: 10px;
-          font-family: 'Syne', sans-serif;
+          font-family: 'inherit', sans-serif;
           font-size: 13px;
           font-weight: 800;
           color: #DC3C3C;

@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import * as XLSX from "xlsx-js-style";
 import DocumentDrawer from "@/components/equipment/DocumentDrawer";
+import EquipmentDetailPanel from "@/components/equipment/EquipmentDetailPanel";
 import { useConfirm } from "@/components/providers/confirm-dialog";
 
 // ============================================================
@@ -85,7 +86,9 @@ export default function EquipmentsPage() {
   const [isUploading, setIsUploading]       = useState(false);
   const [statusMsg, setStatusMsg]           = useState<{ type: "error" | "success"; text: string } | null>(null);
 
-  // Drawer
+  // Panel & drawer
+  const [panelOpen, setPanelOpen]   = useState(false);
+  const [panelEq, setPanelEq]       = useState<Equipment | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [activeEq, setActiveEq]     = useState<Equipment | null>(null);
 
@@ -146,6 +149,10 @@ export default function EquipmentsPage() {
       if (userRole === "SUPERADMIN" && companyId)
         data = data.filter((eq) => eq.companyId === companyId);
       setEquipments(data);
+      if (panelEq) {
+        const updated = data.find((eq) => eq.id === panelEq.id);
+        if (updated) setPanelEq(updated);
+      }
       if (activeEq) {
         const updated = data.find((eq) => eq.id === activeEq.id);
         if (updated) setActiveEq(updated);
@@ -235,6 +242,7 @@ export default function EquipmentsPage() {
       const res = await fetch(`/api/equipments/${id}`, { method: "DELETE" });
       if (!res.ok) throw new Error("Gagal menghapus data alat.");
       setStatusMsg({ type: "success", text: "Alat berhasil dihapus." });
+      if (panelEq?.id === id) setPanelOpen(false);
       fetchEquipments(selectedCompanyId);
       setSelectedEqIds((prev) => prev.filter((x) => x !== id));
     } catch (err: any) {
@@ -731,11 +739,24 @@ export default function EquipmentsPage() {
                                 <input type="checkbox" style={{ cursor: "pointer", accentColor: "#F0A500" }}
                                   checked={isSelected} onChange={() => toggleSelectEq(eq.id)} />
                               </td>
-                              <td className="sticky-col" style={{ position: "sticky", left: 40, background: stickyBg, zIndex: 10, boxShadow: "2px 0 5px rgba(0,0,0,0.02)" }}>
-                                <p className="eq-eq-name" onClick={() => { setActiveEq(eq); setDrawerOpen(true); }}>
+                              
+                              {/* Kolom Nama Alat dimodif biar text bisa word-break */}
+                              <td className="sticky-col" style={{ 
+                                position: "sticky", 
+                                left: 40, 
+                                background: stickyBg, 
+                                zIndex: 10, 
+                                boxShadow: "2px 0 5px rgba(0,0,0,0.02)",
+                                whiteSpace: "normal", 
+                                maxWidth: 220,        
+                                wordBreak: "break-word",
+                                lineHeight: 1.4
+                              }}>
+                                <p className="eq-eq-name" onClick={() => { setPanelEq(eq); setPanelOpen(true); }}>
                                   {eq.name}
                                 </p>
                               </td>
+
                               <td><span className="eq-permit">{eq.brand || "-"}</span></td>
                               <td><span className="eq-permit">{[eq.location, eq.area].filter(Boolean).join(" - ") || "-"}</span></td>
                               <td><span className="eq-permit">{eq.permitNumber || "-"}</span></td>
@@ -813,6 +834,16 @@ export default function EquipmentsPage() {
           </div>
         </div>
       </div>
+
+      {/* ── DETAIL PANEL ── */}
+      <EquipmentDetailPanel
+        equipment={panelEq}
+        isOpen={panelOpen}
+        userRole={userRole}
+        onClose={() => setPanelOpen(false)}
+        onEdit={(eq) => { setPanelOpen(false); setEditingEq(eq); setIsEditModalOpen(true); }}
+        onDocument={(eq) => { setPanelOpen(false); setActiveEq(eq); setDrawerOpen(true); }}
+      />
 
       {/* ── DOCUMENT DRAWER ── */}
       <DocumentDrawer
