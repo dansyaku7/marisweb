@@ -158,7 +158,7 @@ export default function CompaniesPage() {
         .cp-eyebrow { font-size:10px; font-weight:500; color:#C87A00; text-transform:uppercase; letter-spacing:0.14em; margin-bottom:8px; }
         .cp-page-title { font-size:clamp(20px,3.5vw,26px); font-weight:700; color:#1A1A1A; margin:0 0 6px; line-height:1.15; display:flex; align-items:center; gap:12px; }
         .cp-title-icon { width:36px; height:36px; background:rgba(240,165,0,0.08); border:1.5px solid rgba(240,165,0,0.18); border-radius:10px; display:flex; align-items:center; justify-content:center; color:#C87A00; flex-shrink:0; }
-        .cp-page-desc { font-size:13px; color:#AAAAAA; margin:0; max-width:520px; line-height:1.6; }
+        .cp-page-desc { font-size:13px; color:#1A1A1A; margin:0; max-width:520px; line-height:1.6; }
 
         .cp-add-btn { display:flex; align-items:center; gap:8px; padding:11px 20px; background:#F0A500; border:none; border-radius:10px; font-family:inherit; font-size:13px; font-weight:600; color:#1A1A1A; cursor:pointer; white-space:nowrap; transition:0.2s; box-shadow:0 4px 16px rgba(240,165,0,0.2); }
         .cp-add-btn:hover { background:#E09800; transform:translateY(-1px); box-shadow:0 6px 24px rgba(240,165,0,0.28); }
@@ -169,40 +169,40 @@ export default function CompaniesPage() {
         .cp-table-card { background:#FFFFFF; border:1.5px solid #E8E4DC; border-radius:16px; overflow:hidden; box-shadow:0 2px 16px rgba(0,0,0,0.05); }
         .cp-toolbar { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:14px 20px; border-bottom:1px solid #F0EDE4; background:#FAFAF7; flex-wrap:wrap; }
         .cp-search-wrap { position:relative; flex:1; min-width:180px; max-width:360px; }
-        .cp-search-icon { position:absolute; left:12px; top:50%; transform:translateY(-50%); color:#BBBBBB; pointer-events:none; }
+        .cp-search-icon { position:absolute; left:12px; top:50%; transform:translateY(-50%); color:#1A1A1A; pointer-events:none; }
         .cp-search-input { width:100%; padding:9px 14px 9px 36px; background:#FFFFFF; border:1.5px solid #E5E2D8; border-radius:8px; font-family:inherit; font-size:13px; color:#1A1A1A; outline:none; transition:0.2s; caret-color:#F0A500; }
-        .cp-search-input::placeholder { color:#CCCCCC; }
+        .cp-search-input::placeholder { color:#1A1A1A; opacity: 0.5; }
         .cp-search-input:focus { border-color:rgba(240,165,0,0.35); box-shadow:0 0 0 3px rgba(240,165,0,0.08); }
-        .cp-total-badge { font-size:11px; color:#AAAAAA; text-transform:uppercase; letter-spacing:0.1em; white-space:nowrap; }
+        .cp-total-badge { font-size:11px; color:#1A1A1A; text-transform:uppercase; letter-spacing:0.1em; white-space:nowrap; }
         .cp-total-badge strong { color:#C87A00; font-weight:600; }
 
         .cp-table { width:100%; border-collapse:collapse; text-align:left; }
         .cp-table thead tr { border-bottom:1px solid #F0EDE4; }
-        .cp-table thead th { padding:12px 20px; font-size:10px; font-weight:500; text-transform:uppercase; letter-spacing:0.1em; color:#AAAAAA; white-space:nowrap; background:#FAFAF7; }
+        .cp-table thead th { padding:12px 20px; font-size:10px; font-weight:600; text-transform:uppercase; letter-spacing:0.1em; color:#1A1A1A; white-space:nowrap; background:#FAFAF7; }
         .cp-table tbody tr { border-bottom:1px solid #F5F3EE; transition:0.15s; }
         .cp-table tbody tr:last-child { border-bottom:none; }
         .cp-table tbody tr:hover td { background:#FDFCF8; }
         .cp-table td { padding:14px 20px; vertical-align:middle; }
 
         .cp-company-name { font-size:13px; font-weight:600; color:#1A1A1A; }
-        .cp-pic-name     { font-size:11px; color:#888880; margin-top:3px; display:flex; align-items:center; gap:5px; }
-        .cp-email-cell   { display:flex; align-items:center; gap:7px; font-size:12px; color:#555550; font-family:monospace; }
-        .cp-phone-cell   { font-size:11px; color:#AAAAAA; margin-top:3px; font-family:monospace; display:flex; align-items:center; gap:5px; }
-        .cp-unit-badge   { display:inline-flex; align-items:center; justify-content:center; padding:3px 10px; background:#F5F3EE; border:1px solid #E8E4DC; border-radius:999px; font-size:11px; color:#555550; }
+        .cp-pic-name     { font-size:11px; color:#1A1A1A; margin-top:3px; display:flex; align-items:center; gap:5px; }
+        .cp-email-cell   { display:flex; align-items:center; gap:7px; font-size:12px; color:#1A1A1A; font-family:monospace; }
+        .cp-phone-cell   { font-size:11px; color:#1A1A1A; margin-top:3px; font-family:monospace; display:flex; align-items:center; gap:5px; }
+        .cp-unit-badge   { display:inline-flex; align-items:center; justify-content:center; padding:3px 10px; background:#F5F3EE; border:1px solid #E8E4DC; border-radius:999px; font-size:11px; color:#1A1A1A; }
         .cp-status-active  { display:inline-flex; align-items:center; gap:5px; padding:3px 10px; background:rgba(34,160,100,0.07); border:1px solid rgba(34,160,100,0.18); border-radius:999px; font-size:10px; font-weight:500; color:#22A064; white-space:nowrap; }
         .cp-status-suspend { display:inline-flex; align-items:center; gap:5px; padding:3px 10px; background:rgba(220,60,60,0.06); border:1px solid rgba(220,60,60,0.15); border-radius:999px; font-size:10px; font-weight:500; color:#DC3C3C; white-space:nowrap; }
-        .cp-date-cell { font-size:12px; color:#555550; white-space:nowrap; font-family:monospace; }
+        .cp-date-cell { font-size:12px; color:#1A1A1A; white-space:nowrap; font-family:monospace; }
 
         .cp-action-cell { display:flex; align-items:center; justify-content:flex-end; gap:6px; }
-        .cp-btn-edit   { display:flex; align-items:center; justify-content:center; width:30px; height:30px; border-radius:7px; background:#F5F3EE; border:1.5px solid #E5E2D8; color:#AAAAAA; cursor:pointer; transition:0.15s; }
+        .cp-btn-edit   { display:flex; align-items:center; justify-content:center; width:30px; height:30px; border-radius:7px; background:#F5F3EE; border:1.5px solid #E5E2D8; color:#1A1A1A; cursor:pointer; transition:0.15s; }
         .cp-btn-edit:hover   { background:rgba(240,165,0,0.08); border-color:rgba(240,165,0,0.25); color:#C87A00; }
-        .cp-btn-delete { display:flex; align-items:center; justify-content:center; width:30px; height:30px; border-radius:7px; background:#F5F3EE; border:1.5px solid #E5E2D8; color:#CCCCCC; cursor:pointer; transition:0.15s; }
+        .cp-btn-delete { display:flex; align-items:center; justify-content:center; width:30px; height:30px; border-radius:7px; background:#F5F3EE; border:1.5px solid #E5E2D8; color:#1A1A1A; cursor:pointer; transition:0.15s; }
         .cp-btn-delete:hover { background:rgba(220,60,60,0.07); border-color:rgba(220,60,60,0.18); color:#DC3C3C; }
 
         .cp-empty-cell  { padding:64px 20px; text-align:center; }
-        .cp-empty-icon  { width:52px; height:52px; background:#F5F3EE; border:1.5px solid #E5E2D8; border-radius:14px; display:flex; align-items:center; justify-content:center; margin:0 auto 16px; color:#CCCCCC; }
-        .cp-empty-title { font-size:14px; font-weight:600; color:#555; margin:0 0 6px; }
-        .cp-empty-desc  { font-size:12px; color:#AAAAAA; margin:0; }
+        .cp-empty-icon  { width:52px; height:52px; background:#F5F3EE; border:1.5px solid #E5E2D8; border-radius:14px; display:flex; align-items:center; justify-content:center; margin:0 auto 16px; color:#1A1A1A; }
+        .cp-empty-title { font-size:14px; font-weight:600; color:#1A1A1A; margin:0 0 6px; }
+        .cp-empty-desc  { font-size:12px; color:#1A1A1A; margin:0; }
         .cp-spinner { animation: cp-spin 1s linear infinite; }
 
         /* Modal shared */
@@ -213,42 +213,42 @@ export default function CompaniesPage() {
 
         .cp-modal-header { padding:20px 24px 18px; border-bottom:1px solid #F0EDE4; background:#FAFAF7; display:flex; align-items:center; justify-content:space-between; }
         .cp-modal-title    { font-size:15px; font-weight:700; color:#1A1A1A; margin:0 0 3px; }
-        .cp-modal-subtitle { font-size:12px; color:#AAAAAA; margin:0; }
-        .cp-modal-close { width:28px; height:28px; background:#F0EDE4; border:1.5px solid #E5E2D8; border-radius:7px; display:flex; align-items:center; justify-content:center; color:#AAAAAA; cursor:pointer; flex-shrink:0; transition:0.15s; }
-        .cp-modal-close:hover { color:#555; border-color:#C8C0B0; background:#E8E4DC; }
+        .cp-modal-subtitle { font-size:12px; color:#1A1A1A; margin:0; }
+        .cp-modal-close { width:28px; height:28px; background:#F0EDE4; border:1.5px solid #E5E2D8; border-radius:7px; display:flex; align-items:center; justify-content:center; color:#1A1A1A; cursor:pointer; flex-shrink:0; transition:0.15s; }
+        .cp-modal-close:hover { color:#1A1A1A; border-color:#C8C0B0; background:#E8E4DC; }
         .cp-modal-body { padding:20px 24px; }
 
         .cp-form-error { display:flex; align-items:flex-start; gap:8px; background:rgba(220,60,60,0.06); border:1px solid rgba(220,60,60,0.15); border-radius:9px; padding:11px 13px; margin-bottom:18px; font-size:12px; color:#DC3C3C; }
 
         /* Section divider dalam modal */
-        .cp-form-section { font-size:9px; font-weight:600; color:#AAAAAA; text-transform:uppercase; letter-spacing:0.12em; margin:20px 0 14px; padding-bottom:8px; border-bottom:1px solid #F0EDE4; }
+        .cp-form-section { font-size:9px; font-weight:600; color:#1A1A1A; text-transform:uppercase; letter-spacing:0.12em; margin:20px 0 14px; padding-bottom:8px; border-bottom:1px solid #F0EDE4; }
 
         .cp-field { margin-bottom:16px; }
-        .cp-field-label { display:block; font-size:11px; font-weight:600; color:#555550; text-transform:uppercase; letter-spacing:0.1em; margin-bottom:7px; }
+        .cp-field-label { display:block; font-size:11px; font-weight:600; color:#1A1A1A; text-transform:uppercase; letter-spacing:0.1em; margin-bottom:7px; }
         .cp-field-wrap { position:relative; }
-        .cp-field-icon { position:absolute; left:12px; top:50%; transform:translateY(-50%); color:#CCCCCC; pointer-events:none; }
+        .cp-field-icon { position:absolute; left:12px; top:50%; transform:translateY(-50%); color:#1A1A1A; pointer-events:none; }
         .cp-field-input { width:100%; padding:11px 14px 11px 38px; background:#F8F7F3; border:1.5px solid #E5E2D8; border-radius:10px; font-family:inherit; font-size:14px; color:#1A1A1A; outline:none; transition:0.2s; caret-color:#F0A500; }
-        .cp-field-input::placeholder { color:#C8C0B0; }
+        .cp-field-input::placeholder { color:#1A1A1A; opacity: 0.4; }
         .cp-field-input:focus { border-color:rgba(240,165,0,0.4); background:#FFFFFF; box-shadow:0 0 0 3px rgba(240,165,0,0.08); }
-        .cp-field-hint { font-size:11px; color:#BBBBBB; margin-top:6px; }
+        .cp-field-hint { font-size:11px; color:#1A1A1A; margin-top:6px; }
 
         /* 2 kolom untuk field yang pendek */
         .cp-field-row { display:flex; gap:12px; }
         .cp-field-row .cp-field { flex:1; margin-bottom:0; }
 
         .cp-toggle-row { display:flex; align-items:center; justify-content:space-between; padding:12px 14px; background:#F8F7F3; border:1.5px solid #E5E2D8; border-radius:10px; margin-bottom:16px; }
-        .cp-toggle-label { font-size:13px; font-weight:600; color:#555550; }
-        .cp-toggle-sub   { font-size:11px; color:#BBBBBB; margin-top:2px; }
+        .cp-toggle-label { font-size:13px; font-weight:600; color:#1A1A1A; }
+        .cp-toggle-sub   { font-size:11px; color:#1A1A1A; margin-top:2px; }
         .cp-switch { position:relative; width:40px; height:22px; flex-shrink:0; }
         .cp-switch input { opacity:0; width:0; height:0; }
         .cp-switch-track { position:absolute; inset:0; border-radius:999px; background:#E5E2D8; border:1.5px solid #D8D4C8; cursor:pointer; transition:0.2s; }
-        .cp-switch-track::after { content:''; position:absolute; left:3px; top:50%; transform:translateY(-50%); width:14px; height:14px; background:#BBBBBB; border-radius:50%; transition:0.2s; }
+        .cp-switch-track::after { content:''; position:absolute; left:3px; top:50%; transform:translateY(-50%); width:14px; height:14px; background:#1A1A1A; border-radius:50%; transition:0.2s; }
         .cp-switch input:checked + .cp-switch-track { background:rgba(240,165,0,0.15); border-color:rgba(240,165,0,0.35); }
         .cp-switch input:checked + .cp-switch-track::after { left:21px; background:#F0A500; }
 
         .cp-modal-actions { display:flex; gap:10px; padding:0 24px 20px; }
-        .cp-btn-cancel { flex:1; padding:11px; background:#F5F3EE; border:1.5px solid #E5E2D8; border-radius:10px; font-family:inherit; font-size:13px; font-weight:500; color:#888880; cursor:pointer; transition:0.15s; }
-        .cp-btn-cancel:hover:not(:disabled) { background:#EDEAE3; color:#333; }
+        .cp-btn-cancel { flex:1; padding:11px; background:#F5F3EE; border:1.5px solid #E5E2D8; border-radius:10px; font-family:inherit; font-size:13px; font-weight:500; color:#1A1A1A; cursor:pointer; transition:0.15s; }
+        .cp-btn-cancel:hover:not(:disabled) { background:#EDEAE3; color:#1A1A1A; }
         .cp-btn-cancel:disabled { opacity:0.4; cursor:not-allowed; }
         .cp-btn-submit { flex:1; padding:11px; background:#F0A500; border:none; border-radius:10px; font-family:inherit; font-size:13px; font-weight:600; color:#1A1A1A; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:6px; transition:0.2s; box-shadow:0 4px 14px rgba(240,165,0,0.2); }
         .cp-btn-submit:hover:not(:disabled) { background:#E09800; transform:translateY(-1px); }
@@ -260,7 +260,7 @@ export default function CompaniesPage() {
         .cp-delete-body  { padding:28px 24px 20px; text-align:center; }
         .cp-delete-icon  { width:52px; height:52px; background:rgba(220,60,60,0.07); border:1.5px solid rgba(220,60,60,0.15); border-radius:13px; display:flex; align-items:center; justify-content:center; margin:0 auto 16px; color:#DC3C3C; }
         .cp-delete-title { font-size:16px; font-weight:700; color:#1A1A1A; margin:0 0 8px; }
-        .cp-delete-desc  { font-size:13px; color:#AAAAAA; line-height:1.6; margin:0; }
+        .cp-delete-desc  { font-size:13px; color:#1A1A1A; line-height:1.6; margin:0; }
         .cp-delete-target{ display:inline-block; margin-top:12px; font-size:12px; color:#C87A00; font-family:monospace; background:rgba(240,165,0,0.07); border:1px solid rgba(240,165,0,0.18); border-radius:6px; padding:3px 10px; font-weight:500; }
       `}</style>
 
@@ -308,7 +308,7 @@ export default function CompaniesPage() {
               <span className="cp-total-badge">
                 Total: <strong>{filteredCompanies.length}</strong> Klien
                 {searchText && filteredCompanies.length !== companies.length && (
-                  <span style={{ color: "#CCCCCC" }}> dari {companies.length}</span>
+                  <span style={{ color: "#1A1A1A", opacity: 0.4 }}> dari {companies.length}</span>
                 )}
               </span>
             </div>
@@ -356,21 +356,21 @@ export default function CompaniesPage() {
                       <td>
                         {company.namePic ? (
                           <p className="cp-pic-name">
-                            <User size={11} style={{ color: "#CCCCCC", flexShrink: 0 }} />
+                            <User size={11} style={{ color: "#1A1A1A", flexShrink: 0 }} />
                             {company.namePic}
                           </p>
                         ) : (
-                          <p style={{ fontSize: 11, color: "#DDDDDD", fontStyle: "italic" }}>—</p>
+                          <p style={{ fontSize: 11, color: "#1A1A1A", fontStyle: "italic" }}>—</p>
                         )}
                       </td>
                       <td>
                         <p className="cp-email-cell">
-                          <Mail size={12} style={{ color: "#CCCCCC", flexShrink: 0 }} />
+                          <Mail size={12} style={{ color: "#1A1A1A", flexShrink: 0 }} />
                           {company.emailPic}
                         </p>
                         {company.phonePic && (
                           <p className="cp-phone-cell">
-                            <Phone size={10} style={{ color: "#CCCCCC", flexShrink: 0 }} />
+                            <Phone size={10} style={{ color: "#1A1A1A", flexShrink: 0 }} />
                             {company.phonePic}
                           </p>
                         )}
