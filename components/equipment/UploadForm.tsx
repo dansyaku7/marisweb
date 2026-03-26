@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useState } from "react";
-import { LinkIcon, ImageIcon, Loader2, CheckCircle2 } from "lucide-react";
+import React, { useState, useEffect } from "react";
+import { LinkIcon, ImageIcon, Loader2, CheckCircle2, FileUp, Wrench } from "lucide-react";
 
 interface UploadFormProps {
   label: string;
@@ -37,6 +37,26 @@ export default function UploadForm({
   const [fileValue, setFileValue] = useState<File | null>(null);
   const [period, setPeriod] = useState("");
 
+  // Logic buat ganti-ganti teks loading biar keliatan pinter
+  const [loadingText, setLoadingText] = useState("Menyiapkan dokumen...");
+  
+  useEffect(() => {
+    if (isSubmitting) {
+      const texts = [
+        "Sedang mengunggah berkas...",
+        "Menghubungkan ke server...",
+        "Menyimpan informasi periode...",
+        "Sinkronisasi data alat...",
+      ];
+      let i = 0;
+      const interval = setInterval(() => {
+        setLoadingText(texts[i % texts.length]);
+        i++;
+      }, 1500);
+      return () => clearInterval(interval);
+    }
+  }, [isSubmitting]);
+
   const handleSubmit = () => {
     onSubmit({
       mode,
@@ -44,9 +64,6 @@ export default function UploadForm({
       file: mode === "upload" ? (fileValue ?? undefined) : undefined,
       period: showPeriod ? period : undefined,
     });
-    // Jangan reset state di sini secara hardcode. 
-    // Idealnya state di-reset dari parent setelah request API benar-benar sukses.
-    // Tapi karena ini kode lu, gua biarin.
     setLinkValue("");
     setFileValue(null);
     setPeriod("");
@@ -62,41 +79,93 @@ export default function UploadForm({
         display: "flex",
         flexDirection: "column",
         gap: 12,
-        opacity: isSubmitting ? 0.6 : 1, // Feedback visual form sedang dikunci
-        pointerEvents: isSubmitting ? "none" : "auto", // Mencegah interaksi nakal user
-        transition: "opacity 0.2s",
+        position: "relative", // Penting buat overlay
+        transition: "all 0.2s",
       }}
     >
-      {/* Label */}
-      <p
-        style={{
-          fontSize: 11,
-          fontWeight: 600,
-          color: "#555550",
-          textTransform: "uppercase",
-          letterSpacing: "0.08em",
-          margin: 0,
-        }}
-      >
+      {/* ── LOADING OVERLAY (MIRIP FOTO) ── */}
+      {isSubmitting && (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            background: "rgba(255, 255, 255, 0.95)",
+            backdropFilter: "blur(4px)",
+            zIndex: 9999,
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "center",
+            animation: "fadeIn 0.3s ease-out",
+          }}
+        >
+          {/* Container Lingkaran */}
+          <div style={{ position: "relative", width: 120, height: 120, marginBottom: 32 }}>
+            {/* Background Ring */}
+            <svg style={{ position: "absolute", inset: 0, transform: "rotate(-90deg)" }} width="120" height="120">
+              <circle
+                cx="60" cy="60" r="54"
+                fill="transparent"
+                stroke="#E5E2D8"
+                strokeWidth="4"
+              />
+              {/* Animated Progress Ring */}
+              <circle
+                className="loading-circle"
+                cx="60" cy="60" r="54"
+                fill="transparent"
+                stroke="#F0A500"
+                strokeWidth="4"
+                strokeLinecap="round"
+                strokeDasharray="339"
+                strokeDashoffset="339"
+              />
+            </svg>
+            
+            {/* Center Icon Circle */}
+            <div 
+              style={{ 
+                position: "absolute", 
+                inset: 15, 
+                background: "linear-gradient(135deg, #F0A500, #C87A00)", 
+                borderRadius: "50%", 
+                display: "flex", 
+                alignItems: "center", 
+                justifyContent: "center",
+                color: "#FFFFFF",
+                boxShadow: "0 10px 20px rgba(240, 165, 0, 0.3)"
+              }}
+            >
+              <FileUp size={32} className="float-anim" />
+            </div>
+          </div>
+
+          {/* Text Content */}
+          <h2 style={{ fontSize: 22, fontWeight: 700, color: "#1A1A1A", margin: "0 0 8px 0" }}>
+            Memproses Dokumen
+          </h2>
+          <p style={{ fontSize: 14, color: "#1A1A1A", opacity: 0.6, margin: 0, textAlign: "center" }}>
+            {loadingText}
+          </p>
+        </div>
+      )}
+
+      {/* ── FORM CONTENT ── */}
+      <p style={{ fontSize: 11, fontWeight: 600, color: "#1A1A1A", textTransform: "uppercase", letterSpacing: "0.08em", margin: 0 }}>
         {label}
       </p>
 
-      {/* Period input */}
       {showPeriod && (
         <input
           type="text"
           placeholder={periodPlaceholder}
           value={period}
           onChange={(e) => setPeriod(e.target.value)}
-          style={{
-             ...inputStyle, 
-             background: isSubmitting ? "#EFEFEF" : inputStyle.background 
-          }}
+          style={inputStyle}
           disabled={isSubmitting}
         />
       )}
 
-      {/* Mode selector */}
       <div style={{ display: "flex", gap: 12 }}>
         {(["link", "upload"] as const).map((m) => (
           <label
@@ -106,8 +175,8 @@ export default function UploadForm({
               display: "flex",
               alignItems: "center",
               gap: 6,
-              cursor: isSubmitting ? "not-allowed" : "pointer",
-              color: mode === m ? "#C87A00" : "#888880",
+              cursor: "pointer",
+              color: mode === m ? "#C87A00" : "#1A1A1A",
               fontWeight: mode === m ? 600 : 400,
               transition: "color 0.15s",
             }}
@@ -125,17 +194,13 @@ export default function UploadForm({
         ))}
       </div>
 
-      {/* Input area */}
       {mode === "link" ? (
         <input
           type="url"
           placeholder="https://drive.google.com/..."
           value={linkValue}
           onChange={(e) => setLinkValue(e.target.value)}
-          style={{
-            ...inputStyle, 
-            background: isSubmitting ? "#EFEFEF" : inputStyle.background 
-         }}
+          style={inputStyle}
           disabled={isSubmitting}
         />
       ) : (
@@ -143,59 +208,66 @@ export default function UploadForm({
           type="file"
           accept="image/*,.pdf"
           onChange={(e) => setFileValue(e.target.files?.[0] ?? null)}
-          style={{ 
-            ...inputStyle, 
-            padding: "8px", 
-            color: "#888880",
-            background: isSubmitting ? "#EFEFEF" : inputStyle.background 
-          }}
+          style={{ ...inputStyle, padding: "8px" }}
           disabled={isSubmitting}
         />
       )}
 
-      {/* Submit button */}
       <button
         onClick={handleSubmit}
         disabled={isSubmitting}
         style={{
           padding: "10px 16px",
-          background: isSubmitting ? "#F5F3EE" : "#F0A500",
+          background: "#F0A500",
           border: "none",
           borderRadius: 10,
           fontFamily: "inherit",
           fontSize: 13,
           fontWeight: 600,
-          color: isSubmitting ? "#AAAAAA" : "#1A1A1A",
-          cursor: isSubmitting ? "not-allowed" : "pointer",
+          color: "#1A1A1A",
+          cursor: "pointer",
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
           gap: 7,
-          transition: "background 0.2s, transform 0.15s",
-          boxShadow: isSubmitting ? "none" : "0 4px 14px rgba(240,165,0,0.2)",
-        }}
-        onMouseEnter={(e) => {
-          if (!isSubmitting) (e.currentTarget as HTMLButtonElement).style.background = "#E09800";
-        }}
-        onMouseLeave={(e) => {
-          if (!isSubmitting) (e.currentTarget as HTMLButtonElement).style.background = "#F0A500";
+          transition: "all 0.2s",
+          boxShadow: "0 4px 14px rgba(240,165,0,0.2)",
         }}
       >
-        {isSubmitting ? (
-          <>
-            <Loader2 size={14} style={{ animation: "spin 1s linear infinite" }} />
-            Menyimpan...
-          </>
-        ) : (
-          <>
-            <CheckCircle2 size={14} />
-            Simpan Dokumen
-          </>
-        )}
+        <CheckCircle2 size={14} />
+        Simpan Dokumen
       </button>
 
-      {/* Tetap butuh keyframes karena lu pakai inline styles alih-alih Tailwind */}
-      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+      {/* ── STYLES ── */}
+      <style>{`
+        @keyframes fadeIn {
+          from { opacity: 0; }
+          to { opacity: 1; }
+        }
+
+        @keyframes progress {
+          0% { stroke-dashoffset: 339; }
+          50% { stroke-dashoffset: 100; }
+          100% { stroke-dashoffset: 0; }
+        }
+
+        @keyframes floating {
+          0%, 100% { transform: translateY(0); }
+          50% { transform: translateY(-5px); }
+        }
+
+        .loading-circle {
+          animation: progress 3s ease-in-out infinite;
+        }
+
+        .float-anim {
+          animation: floating 2s ease-in-out infinite;
+        }
+
+        @keyframes spin { 
+          to { transform: rotate(360deg); } 
+        }
+      `}</style>
     </div>
   );
 }
