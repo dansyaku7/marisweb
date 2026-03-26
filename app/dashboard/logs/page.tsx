@@ -89,7 +89,7 @@ export default function NotificationLogsPage() {
         .lg-eyebrow { font-size: 10px; font-weight: 500; color: #C87A00; text-transform: uppercase; letter-spacing: 0.14em; margin-bottom: 8px; }
         .lg-page-title { font-size: clamp(20px, 3.5vw, 26px); font-weight: 700; color: #1A1A1A; margin: 0 0 6px; line-height: 1.15; display: flex; align-items: center; gap: 12px; }
         .lg-title-icon { width: 36px; height: 36px; background: rgba(240,165,0,0.08); border: 1.5px solid rgba(240,165,0,0.18); border-radius: 10px; display: flex; align-items: center; justify-content: center; color: #C87A00; flex-shrink: 0; }
-        .lg-page-desc { font-size: 13px; color: #AAAAAA; margin: 0; max-width: 520px; line-height: 1.6; }
+        .lg-page-desc { font-size: 13px; color: #1A1A1A; margin: 0; max-width: 520px; line-height: 1.6; } /* UBAH KE ITEM */
         .lg-divider { height: 1px; background: linear-gradient(90deg, #F0A500 0%, transparent 60%); margin: 24px 0 28px; opacity: 0.2; }
 
         .lg-error-bar { display: flex; align-items: center; gap: 10px; background: rgba(220,60,60,0.06); border: 1px solid rgba(220,60,60,0.15); border-radius: 10px; padding: 13px 16px; margin-bottom: 24px; font-size: 13px; color: #DC3C3C; }
@@ -98,18 +98,18 @@ export default function NotificationLogsPage() {
 
         .lg-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 20px; background: #FAFAF7; border-bottom: 1px solid #F0EDE4; flex-wrap: wrap; }
         .lg-search-wrap { position: relative; flex: 1; min-width: 180px; max-width: 360px; }
-        .lg-search-icon { position: absolute; left: 11px; top: 50%; transform: translateY(-50%); color: #CCCCCC; pointer-events: none; }
+        .lg-search-icon { position: absolute; left: 11px; top: 50%; transform: translateY(-50%); color: #1A1A1A; pointer-events: none; } /* UBAH KE ITEM */
         .lg-search-input { width: 100%; padding: 9px 14px 9px 34px; background: #FFFFFF; border: 1.5px solid #E5E2D8; border-radius: 8px; font-family: inherit; font-size: 13px; color: #1A1A1A; outline: none; transition: 0.2s; caret-color: #F0A500; }
-        .lg-search-input::placeholder { color: #CCCCCC; }
+        .lg-search-input::placeholder { color: #1A1A1A; opacity: 0.4; } /* UBAH KE ITEM */
         .lg-search-input:focus { border-color: rgba(240,165,0,0.35); box-shadow: 0 0 0 3px rgba(240,165,0,0.08); }
 
-        .lg-log-count { font-size: 11px; color: #AAAAAA; text-transform: uppercase; letter-spacing: 0.1em; white-space: nowrap; }
+        .lg-log-count { font-size: 11px; color: #1A1A1A; text-transform: uppercase; letter-spacing: 0.1em; white-space: nowrap; } /* UBAH KE ITEM */
         .lg-log-count strong { color: #C87A00; font-weight: 600; }
 
         .lg-table-scroll { overflow-x: auto; }
         .lg-table { width: 100%; border-collapse: collapse; text-align: left; }
         .lg-table thead tr { border-bottom: 1px solid #F0EDE4; }
-        .lg-table thead th { padding: 12px 20px; font-size: 10px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.1em; color: #AAAAAA; background: #FAFAF7; white-space: nowrap; }
+        .lg-table thead th { padding: 12px 20px; font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; color: #1A1A1A; background: #FAFAF7; white-space: nowrap; } /* UBAH KE ITEM */
         .lg-table tbody tr { border-bottom: 1px solid #F5F3EE; transition: 0.12s; }
         .lg-table tbody tr:last-child { border-bottom: none; }
         .lg-table tbody tr:hover td { background: #FDFCF8; }
@@ -119,27 +119,27 @@ export default function NotificationLogsPage() {
         .lg-badge.sent    { background: rgba(34,160,100,0.07);  border-color: rgba(34,160,100,0.18);  color: #22A064; }
         .lg-badge.failed  { background: rgba(220,60,60,0.07);   border-color: rgba(220,60,60,0.18);   color: #DC3C3C; }
         .lg-badge.bounced { background: rgba(234,120,40,0.07);  border-color: rgba(234,120,40,0.18);  color: #EA7828; }
-        .lg-badge.pending { background: #F5F3EE; border-color: #E5E2D8; color: #AAAAAA; }
+        .lg-badge.pending { background: #F5F3EE; border-color: #E5E2D8; color: #1A1A1A; } /* UBAH KE ITEM */
 
         .lg-error-msg { font-size: 10px; color: #DC9090; margin-top: 5px; max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-family: monospace; }
 
         .lg-company-name { font-size: 13px; font-weight: 600; color: #1A1A1A; display: flex; align-items: center; gap: 7px; margin-bottom: 3px; }
-        .lg-email        { font-size: 11px; color: #AAAAAA; font-family: monospace; }
-        .lg-eq-name      { font-size: 13px; font-weight: 500; color: #333330; }
-        .lg-eq-expiry    { font-size: 10px; color: #BBBBBB; margin-top: 3px; text-transform: uppercase; letter-spacing: 0.06em; font-family: monospace; }
-        .lg-sent-date    { font-size: 12px; color: #555550; text-align: right; white-space: nowrap; font-family: monospace; }
-        .lg-sent-time    { font-size: 10px; color: #BBBBBB; text-align: right; margin-top: 3px; white-space: nowrap; font-family: monospace; }
+        .lg-email        { font-size: 11px; color: #1A1A1A; font-family: monospace; } /* UBAH KE ITEM */
+        .lg-eq-name      { font-size: 13px; font-weight: 600; color: #1A1A1A; } /* TEBALIN & ITEMIN */
+        .lg-eq-expiry    { font-size: 10px; color: #1A1A1A; margin-top: 3px; text-transform: uppercase; letter-spacing: 0.06em; font-family: monospace; } /* UBAH KE ITEM */
+        .lg-sent-date    { font-size: 12px; color: #1A1A1A; text-align: right; white-space: nowrap; font-family: monospace; } /* UBAH KE ITEM */
+        .lg-sent-time    { font-size: 10px; color: #1A1A1A; text-align: right; margin-top: 3px; white-space: nowrap; font-family: monospace; } /* UBAH KE ITEM */
 
         .lg-empty { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 72px 20px; text-align: center; }
-        .lg-empty-icon  { width: 60px; height: 60px; background: #F5F3EE; border: 1.5px solid #E5E2D8; border-radius: 14px; display: flex; align-items: center; justify-content: center; margin: 0 auto 18px; color: #CCCCCC; }
-        .lg-empty-title { font-size: 15px; font-weight: 600; color: #555550; margin: 0 0 6px; }
-        .lg-empty-desc  { font-size: 12px; color: #AAAAAA; margin: 0; max-width: 320px; line-height: 1.6; }
+        .lg-empty-icon  { width: 60px; height: 60px; background: #F5F3EE; border: 1.5px solid #E5E2D8; border-radius: 14px; display: flex; align-items: center; justify-content: center; margin: 0 auto 18px; color: #1A1A1A; } /* UBAH KE ITEM */
+        .lg-empty-title { font-size: 15px; font-weight: 600; color: #1A1A1A; margin: 0 0 6px; } /* UBAH KE ITEM */
+        .lg-empty-desc  { font-size: 12px; color: #1A1A1A; margin: 0; max-width: 320px; line-height: 1.6; } /* UBAH KE ITEM */
         .lg-spinner { animation: lg-spin 1s linear infinite; }
 
         .lg-pag-bar  { padding: 12px 20px; border-top: 1px solid #F0EDE4; background: #FAFAF7; display: flex; align-items: center; justify-content: space-between; gap: 8px; }
-        .lg-pag-info { font-size: 10px; color: #AAAAAA; font-family: monospace; white-space: nowrap; }
+        .lg-pag-info { font-size: 10px; color: #1A1A1A; font-family: monospace; white-space: nowrap; } /* UBAH KE ITEM */
         .lg-pag-btns { display: flex; gap: 6px; }
-        .lg-pag-btn  { padding: 5px 12px; font-size: 11px; font-weight: 500; border-radius: 7px; background: #FFFFFF; border: 1.5px solid #E5E2D8; color: #888880; cursor: pointer; display: flex; align-items: center; gap: 4px; transition: 0.15s; font-family: monospace; }
+        .lg-pag-btn  { padding: 5px 12px; font-size: 11px; font-weight: 500; border-radius: 7px; background: #FFFFFF; border: 1.5px solid #E5E2D8; color: #1A1A1A; cursor: pointer; display: flex; align-items: center; gap: 4px; transition: 0.15s; font-family: monospace; } /* UBAH KE ITEM */
         .lg-pag-btn:hover:not(:disabled) { background: rgba(240,165,0,0.07); border-color: rgba(240,165,0,0.25); color: #C87A00; }
         .lg-pag-btn:disabled { opacity: 0.35; cursor: not-allowed; }
       `}</style>
@@ -179,7 +179,7 @@ export default function NotificationLogsPage() {
               <span className="lg-log-count">
                 Total: <strong>{filteredLogs.length}</strong> log
                 {searchText && logs.length !== filteredLogs.length && (
-                  <span style={{ color: "#CCCCCC" }}> dari {logs.length}</span>
+                  <span style={{ color: "#1A1A1A", opacity: 0.5 }}> dari {logs.length}</span>
                 )}
               </span>
             </div>
@@ -235,7 +235,7 @@ export default function NotificationLogsPage() {
                         <td>
                           {userRole === "SUPERADMIN" && (
                             <p className="lg-company-name">
-                              <Building2 size={13} style={{ color: "#CCCCCC", flexShrink: 0 }} />
+                              <Building2 size={13} style={{ color: "#1A1A1A", flexShrink: 0 }} />
                               {log.company.name}
                             </p>
                           )}

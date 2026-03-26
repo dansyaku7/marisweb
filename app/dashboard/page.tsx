@@ -23,9 +23,9 @@ const variantStyles: Record<CardVariant, { border: string; iconBg: string; iconC
     bg: "#FFFFFF",
     border: "#E8E4DC",
     iconBg: "rgba(0,0,0,0.04)",
-    iconColor: "#999990",
-    labelColor: "#888880",
-    subtextColor: "#AAAAAA",
+    iconColor: "#1A1A1A", // UBAH KE ITEM
+    labelColor: "#1A1A1A", // UBAH KE ITEM
+    subtextColor: "#1A1A1A", // UBAH KE ITEM
     accent: "#D8D4C8",
     glowColor: "transparent",
   },
@@ -99,7 +99,7 @@ function KpiCard({ variant, icon, label, value, unit, subtext, pulse = false, de
         <p style={{ fontSize: 11, fontWeight: 600, color: s.labelColor, textTransform: "uppercase", letterSpacing: "0.12em", margin: "0 0 6px 0" }}>{label}</p>
         <div style={{ display: "flex", alignItems: "baseline", gap: 6 }}>
           <span style={{ fontSize: 36, fontWeight: 700, color: "#1A1A1A", lineHeight: 1 }}>{value}</span>
-          <span style={{ fontSize: 13, color: "#AAAAAA", fontWeight: 500 }}>{unit}</span>
+          <span style={{ fontSize: 13, color: "#1A1A1A", fontWeight: 500 }}>{unit}</span> {/* UBAH KE ITEM */}
         </div>
         <p style={{ fontSize: 12, color: s.subtextColor, marginTop: 8, fontWeight: 400 }}>{subtext}</p>
       </div>
@@ -176,11 +176,10 @@ export default function DashboardPage() {
         .db-root * { box-sizing: border-box; }
         .db-root {
           font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-          /* ✅ FIX UTAMA: pastikan bisa scroll secara vertikal */
           height: 100%;
           overflow-y: auto;
           overflow-x: hidden;
-          -webkit-overflow-scrolling: touch; /* smooth scroll di iOS */
+          -webkit-overflow-scrolling: touch;
         }
 
         @keyframes fadeSlideUp {
@@ -249,7 +248,7 @@ export default function DashboardPage() {
           border: 1.5px solid #E8E4DC;
           border-radius: 16px;
           overflow: hidden;
-          box-shadow: 0 2px 16px rgba(0,0,0,0.05);
+          box-shadow: 0 2px 16 rgba(0,0,0,0.05);
         }
         .db-card-header {
           padding: 16px 24px;
@@ -283,8 +282,8 @@ export default function DashboardPage() {
           font-size: 10px;
           text-transform: uppercase;
           letter-spacing: 0.08em;
-          color: #AAAAAA;
-          font-weight: 500;
+          color: #1A1A1A; /* UBAH KE ITEM */
+          font-weight: 600; /* SEDIKIT LEBIH TEBAL */
           border-bottom: 1px solid #F0EDE4;
           background: #FAFAF7;
         }
@@ -315,15 +314,14 @@ export default function DashboardPage() {
 
         .section-label {
           font-size: 11px;
-          color: #BBBBBB;
+          color: #1A1A1A; /* UBAH KE ITEM */
           text-transform: uppercase;
           letter-spacing: 0.15em;
-          font-weight: 500;
+          font-weight: 600;
         }
         .section-line { flex: 1; height: 1px; background: #EDEAE3; }
       `}</style>
 
-      {/* ✅ FIX: hapus minHeight: "100vh" dari sini, pindah ke CSS .db-root */}
       <div className="db-root" style={{ background: "#FAFAF8" }}>
         <div className="db-inner">
 
@@ -341,15 +339,15 @@ export default function DashboardPage() {
                   Status Inspeksi &{" "}
                   <span style={{ color: "#F0A500" }}>Perizinan</span>
                 </h1>
-                <p style={{ marginTop: 8, fontSize: 14, color: "#999990", fontWeight: 400 }}>
+                <p style={{ marginTop: 8, fontSize: 14, color: "#1A1A1A", fontWeight: 400 }}> {/* UBAH KE ITEM */}
                   Ringkasan pemantauan alat berat untuk{" "}
                   <span className="company-tag">{userProfile?.companyName ?? "—"}</span>
                 </p>
               </div>
 
               <div style={{ textAlign: "right" }}>
-                <p style={{ fontFamily: 'monospace', fontSize: 11, color: "#BBBBBB", textTransform: "uppercase", letterSpacing: "0.1em", margin: 0, fontWeight: 500 }}>{dateStr}</p>
-                <p style={{ fontFamily: 'monospace', fontSize: 11, color: "#C87A00", opacity: 0.8, margin: "4px 0 0 0", fontWeight: 500 }}>
+                <p style={{ fontFamily: 'monospace', fontSize: 11, color: "#1A1A1A", textTransform: "uppercase", letterSpacing: "0.1em", margin: 0, fontWeight: 600 }}>{dateStr}</p> {/* UBAH KE ITEM */}
+                <p style={{ fontFamily: 'monospace', fontSize: 11, color: "#C87A00", opacity: 0.8, margin: "4px 0 0 0", fontWeight: 600 }}>
                   {userProfile?.name ? `// ${userProfile.name}` : "// MARUSINDO"}
                 </p>
               </div>
@@ -422,10 +420,10 @@ export default function DashboardPage() {
 
             <div style={{ overflowX: "auto" }}>
               {urgentEquipments.length === 0 ? (
-                <div style={{ padding: "40px", textAlign: "center", color: "#BBBBBB" }}>
+                <div style={{ padding: "40px", textAlign: "center", color: "#1A1A1A" }}> {/* UBAH KE ITEM */}
                   <ShieldCheck size={32} style={{ margin: "0 auto 12px", color: "#22A064", opacity: 0.5 }} />
-                  <p style={{ fontSize: 14, fontWeight: 500, margin: 0, color: "#555" }}>Tidak ada alat dalam status kritis</p>
-                  <p style={{ fontSize: 12, marginTop: 4, color: "#AAAAAA", fontWeight: 400 }}>Semua perizinan masih aman.</p>
+                  <p style={{ fontSize: 14, fontWeight: 600, margin: 0, color: "#1A1A1A" }}>Tidak ada alat dalam status kritis</p>
+                  <p style={{ fontSize: 12, marginTop: 4, color: "#1A1A1A", fontWeight: 400 }}>Semua perizinan masih aman.</p>
                 </div>
               ) : (
                 <table className="db-table">
@@ -445,22 +443,22 @@ export default function DashboardPage() {
                         <tr key={eq.id}>
                           {userProfile?.role === "SUPERADMIN" && (
                             <td>
-                              <span style={{ fontSize: 12, fontWeight: 500, color: "#666" }}>
+                              <span style={{ fontSize: 12, fontWeight: 600, color: "#1A1A1A" }}>
                                 {eq.company?.name || "N/A"}
                               </span>
                             </td>
                           )}
                           <td>
                             <p style={{ fontSize: 13, fontWeight: 600, color: "#1A1A1A", margin: "0 0 4px 0" }}>{eq.name}</p>
-                            <p style={{ fontFamily: 'monospace', fontSize: 11, color: "#AAAAAA", margin: 0 }}>
+                            <p style={{ fontFamily: 'monospace', fontSize: 11, color: "#1A1A1A", margin: 0 }}> {/* UBAH KE ITEM */}
                               Izin: {eq.permitNumber}
                             </p>
                           </td>
                           <td>
-                            <p style={{ fontSize: 12, color: "#888880", margin: 0, fontWeight: 400 }}>{eq.location || "-"}</p>
+                            <p style={{ fontSize: 12, color: "#1A1A1A", margin: 0, fontWeight: 400 }}>{eq.location || "-"}</p> {/* UBAH KE ITEM */}
                           </td>
                           <td style={{ textAlign: "right" }}>
-                            <p style={{ fontSize: 13, fontWeight: 500, color: "#333", margin: "0 0 4px 0" }}>
+                            <p style={{ fontSize: 13, fontWeight: 600, color: "#1A1A1A", margin: "0 0 4px 0" }}> {/* UBAH KE ITEM */}
                               {new Date(eq.expiryDate).toLocaleDateString("id-ID", { day: "2-digit", month: "short", year: "numeric" })}
                             </p>
                             <span className={`eq-badge ${status.variant}`}>

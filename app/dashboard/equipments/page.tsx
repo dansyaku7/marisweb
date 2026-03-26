@@ -250,10 +250,10 @@ export default function EquipmentsPage() {
   const handleDownloadTemplate = () => {
     const templateData = [{
       "ALAT": "CONTOH ALAT (WAJIB)", "LOKASI": "Gedung A",
-      "NOMOR IZIN": "123/IZIN/2025", "NOMOR SERIE": "SN-001",
+      "NOMOR IZIN": "Cth: 123/IZIN/2025", "NOMOR SERIE": "Cth: SN-001",
       "TANGGAL PEMERIKSAAN": "2025-01-01", "TANGGAL HABIS": "2026-01-01",
-      "AREA": "Area Produksi Lt.2", "MEREK": "Komatsu",
-      "KAPASITAS": "5 Ton", "KETERANGAN": "Catatan tambahan (opsional)",
+      "AREA": ".....", "MEREK": "....",
+      "KAPASITAS": "Cth: 5 Ton", "KETERANGAN": "Catatan tambahan (opsional)",
     }];
     const ws = XLSX.utils.json_to_sheet(templateData);
     ["A1","B1","C1","D1","E1","F1","G1","H1","I1","J1"].forEach((col) => {
