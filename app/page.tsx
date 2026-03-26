@@ -48,8 +48,6 @@ export default function LoginPage() {
   return (
     <>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@400;500&display=swap');
-
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
         html, body {
@@ -59,10 +57,9 @@ export default function LoginPage() {
 
         /* ── ROOT: full viewport, dua kolom ── */
         .login-root {
-          font-family: 'Syne', sans-serif;
+          font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
           display: flex;
           width: 100vw;
-          /* Pakai height: 100% + min-height fallback biar konsisten di semua env */
           height: 100vh;
           height: 100dvh;
           min-height: 600px;
@@ -119,15 +116,15 @@ export default function LoginPage() {
         .tag-pill-dot { width: 6px; height: 6px; border-radius: 50%; background: #F0A500; animation: blink 1.4s ease-in-out infinite; }
         @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.2; } }
 
-        .left-heading { font-size: clamp(28px, 3vw, 42px); font-weight: 800; line-height: 1.1; color: #1A1A1A; margin: 0 0 16px; }
+        .left-heading { font-size: clamp(28px, 3vw, 42px); font-weight: 800; line-height: 1.1; color: #1A1A1A; margin: 0 0 16px; letter-spacing: -0.02em; }
         .left-heading span { color: #F0A500; }
-        .left-desc { font-size: 15px; line-height: 1.7; color: #666660; font-weight: 500; max-width: 360px; margin: 0; }
+        .left-desc { font-size: 15px; line-height: 1.6; color: #555550; font-weight: 500; max-width: 360px; margin: 0; }
         .divider-line { width: 40px; height: 2px; background: rgba(240,165,0,0.4); margin: 32px 0; border-radius: 2px; }
         .stats-row { display: flex; gap: 40px; margin-bottom: 40px; }
 
         .testimonial { background: rgba(255,255,255,0.8); border: 1px solid #E8E4D8; border-radius: 16px; padding: 24px; backdrop-filter: blur(8px); position: relative; overflow: hidden; box-shadow: 0 2px 16px rgba(240,165,0,0.08); }
         .testimonial::before { content: '"'; position: absolute; top: -10px; left: 16px; font-size: 80px; font-weight: 800; color: rgba(240,165,0,0.12); line-height: 1; pointer-events: none; }
-        .testimonial-text { font-size: 13.5px; color: #4A4A45; font-weight: 600; line-height: 1.7; font-style: italic; margin: 0 0 16px; }
+        .testimonial-text { font-size: 13.5px; color: #4A4A45; font-weight: 600; line-height: 1.6; font-style: italic; margin: 0 0 16px; }
         .testimonial-footer { display: flex; align-items: center; gap: 10px; }
         .avatar-stack { display: flex; }
         .avatar { width: 28px; height: 28px; border-radius: 50%; border: 2px solid #F3F4EF; display: flex; align-items: center; justify-content: center; font-size: 9px; font-weight: 700; margin-left: -6px; }
@@ -135,19 +132,15 @@ export default function LoginPage() {
         .a1 { background: #FEF3C7; color: #92400E; }
         .a2 { background: #FDE68A; color: #78350F; }
         .a3 { background: #E5E7E0; color: #4B5563; }
-        .trust-text { font-size: 12px; color: #9CA390; font-weight: 700; }
-        .trust-text strong { color: #5A5A55; }
+        .trust-text { font-size: 12px; color: #888880; font-weight: 600; }
+        .trust-text strong { color: #1A1A1A; font-weight: 700; }
 
-        /* ── RIGHT PANE ──
-           Kunci: height: 100%, overflow-y: auto biar bisa scroll kalau layar pendek
-           tapi tetap centered kalau layar cukup tinggi
-        */
+        /* ── RIGHT PANE ── */
         .right-pane {
           display: flex;
           width: 100%;
           height: 100%;
           overflow-y: auto;
-          /* Pakai padding bukan align-items center biar konsisten di semua browser & Vercel */
           flex-direction: column;
           align-items: center;
           justify-content: center;
@@ -165,18 +158,18 @@ export default function LoginPage() {
 
         .desktop-logo { position: relative; z-index: 10; margin-bottom: 40px; }
 
-        .form-eyebrow { font-family: 'DM Mono', monospace; font-size: 11px; letter-spacing: 0.15em; text-transform: uppercase; color: #C87A00; margin-bottom: 12px; font-weight: 500; }
-        .form-title { font-size: clamp(26px, 6vw, 34px); font-weight: 750; color: #1A1A1A; margin: 0 0 6px; line-height: 1.15; }
-        .form-subtitle { font-size: 14px; font-weight: 600; color: #888880; margin: 0 0 36px; }
+        .form-eyebrow { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; font-size: 11px; letter-spacing: 0.15em; text-transform: uppercase; color: #C87A00; margin-bottom: 12px; font-weight: 600; }
+        .form-title { font-size: clamp(26px, 6vw, 34px); font-weight: 800; color: #1A1A1A; margin: 0 0 6px; line-height: 1.15; letter-spacing: -0.02em; }
+        .form-subtitle { font-size: 14px; font-weight: 500; color: #555550; margin: 0 0 36px; }
 
-        .error-box { display: flex; align-items: center; gap: 10px; background: rgba(239,68,68,0.06); border: 1px solid rgba(239,68,68,0.2); border-radius: 12px; padding: 14px 16px; margin-bottom: 24px; font-size: 13px; color: #DC2626; }
+        .error-box { display: flex; align-items: center; gap: 10px; background: rgba(239,68,68,0.06); border: 1px solid rgba(239,68,68,0.2); border-radius: 12px; padding: 14px 16px; margin-bottom: 24px; font-size: 13px; font-weight: 500; color: #DC2626; }
 
         .field { margin-bottom: 20px; }
-        .field-label { display: block; font-size: 12px; font-weight: 700; color: #1A1A1A; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 8px; }
+        .field-label { display: block; font-size: 12px; font-weight: 700; color: #1A1A1A; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 8px; }
 
         .input-wrap { position: relative; display: flex; align-items: center; }
-        .field-input { display: block; width: 100%; background: #F8F7F3; border: 1.5px solid #E2DDD0; border-radius: 12px; padding: 14px 16px; font-family: 'Syne', sans-serif; font-size: 16px; font-weight: 600; color: #1A1A1A; outline: none; transition: border-color 0.2s, box-shadow 0.2s, background 0.2s; caret-color: #F0A500; }
-        .field-input::placeholder { color: #C0BBB0; font-weight: 400; }
+        .field-input { display: block; width: 100%; background: #F8F7F3; border: 1.5px solid #E2DDD0; border-radius: 12px; padding: 14px 16px; font-family: inherit; font-size: 15px; font-weight: 500; color: #1A1A1A; outline: none; transition: border-color 0.2s, box-shadow 0.2s, background 0.2s; caret-color: #F0A500; }
+        .field-input::placeholder { color: #AAAAAA; font-weight: 400; }
         .field-input:focus { border-color: #F0A500; background: #FFFFFF; box-shadow: 0 0 0 3px rgba(240,165,0,0.1); }
         .field-input--pw { padding-right: 52px; }
 
@@ -188,21 +181,21 @@ export default function LoginPage() {
         .custom-checkbox { appearance: none; width: 16px; height: 16px; border: 1.5px solid #C8C0B0; border-radius: 4px; background: #F8F7F3; cursor: pointer; transition: all 0.2s; flex-shrink: 0; position: relative; }
         .custom-checkbox:checked { background: #F0A500; border-color: #F0A500; }
         .custom-checkbox:checked::after { content: ''; display: block; width: 4px; height: 7px; border: 2px solid #FFFFFF; border-top: none; border-left: none; position: absolute; top: 1px; left: 5px; transform: rotate(45deg); }
-        .remember-label { font-size: 13px; font-weight: 600; color: #888880; cursor: pointer; }
+        .remember-label { font-size: 13px; font-weight: 500; color: #555550; cursor: pointer; }
 
-        .submit-btn { display: flex; width: 100%; align-items: center; justify-content: center; gap: 8px; background: #F0A500; border: none; border-radius: 12px; padding: 15px; font-family: 'Syne', sans-serif; font-size: 14px; font-weight: 700; color: #1A1A1A; letter-spacing: 0.04em; cursor: pointer; text-transform: uppercase; transition: background 0.2s, transform 0.15s, box-shadow 0.2s; box-shadow: 0 4px 20px rgba(240,165,0,0.25); position: relative; overflow: hidden; }
+        .submit-btn { display: flex; width: 100%; align-items: center; justify-content: center; gap: 8px; background: #F0A500; border: none; border-radius: 12px; padding: 15px; font-family: inherit; font-size: 14px; font-weight: 700; color: #1A1A1A; letter-spacing: 0.02em; cursor: pointer; transition: background 0.2s, transform 0.15s, box-shadow 0.2s; box-shadow: 0 4px 14px rgba(240,165,0,0.2); position: relative; overflow: hidden; }
         .submit-btn::before { content: ''; position: absolute; inset: 0; background: linear-gradient(135deg, rgba(255,255,255,0.18) 0%, transparent 60%); pointer-events: none; }
-        .submit-btn:hover:not(:disabled) { background: #E09800; transform: translateY(-1px); box-shadow: 0 8px 32px rgba(240,165,0,0.35); }
+        .submit-btn:hover:not(:disabled) { background: #E09800; transform: translateY(-1px); box-shadow: 0 6px 20px rgba(240,165,0,0.25); }
         .submit-btn:active:not(:disabled) { transform: translateY(0); }
-        .submit-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        .submit-btn:disabled { opacity: 0.5; cursor: not-allowed; box-shadow: none; transform: none; }
 
         .form-footer { margin-top: 28px; padding-top: 24px; border-top: 1px solid #ECEAE3; text-align: center; }
         @media (min-width: 1024px) { .form-footer { text-align: left; } }
-        .form-footer-text { font-size: 12px; font-weight: 600; color: #AAAAAA; margin: 0; }
+        .form-footer-text { font-size: 13px; font-weight: 500; color: #888880; margin: 0; }
         .form-footer-link { color: #C87A00; font-weight: 600; text-decoration: none; }
         .form-footer-link:hover { color: #E09800; text-decoration: underline; }
-        .version-badge { display: inline-flex; align-items: center; gap: 5px; font-family: 'DM Mono', monospace; font-size: 10px; color: #C8C0B0; margin-top: 12px; }
-        .version-badge-dot { width: 5px; height: 5px; border-radius: 50%; background: #C8C0B0; }
+        .version-badge { display: inline-flex; align-items: center; gap: 5px; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; font-size: 11px; font-weight: 500; color: #AAAAAA; margin-top: 12px; }
+        .version-badge-dot { width: 5px; height: 5px; border-radius: 50%; background: #AAAAAA; }
 
         @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
       `}</style>
@@ -266,7 +259,7 @@ export default function LoginPage() {
             </div>
 
             <p className="form-eyebrow">// Marusindo Ajimandiri Integrated System</p>
-            <h2 className="form-title">Selamat<br />Datang.</h2>
+            <h2 className="form-title">Selamat Datang.</h2>
             <p className="form-subtitle">Masuk ke dasbor monitoring Anda.</p>
 
             {error && (
@@ -309,18 +302,18 @@ export default function LoginPage() {
               <button type="submit" className="submit-btn" disabled={isLoading}>
                 {isLoading
                   ? <Loader2 style={{ width: 18, height: 18, animation: "spin 1s linear infinite" }} />
-                  : "Masuk →"}
+                  : "Masuk"}
               </button>
             </form>
 
             <div className="form-footer">
               <p className="form-footer-text">
                 Butuh bantuan?{" "}
-                <a href="#" className="form-footer-link">Hubungi Administrator Marusindo Ajimandiri</a>
+                <a href="#" className="form-footer-link">Hubungi Administrator</a>
               </p>
               <div className="version-badge">
                 <span className="version-badge-dot" />
-                M-Track v2.4.1 · Secure Connection by SYK
+                M-Track v2.4.1 · Secure Connection
               </div>
             </div>
 
