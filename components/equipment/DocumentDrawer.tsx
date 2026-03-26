@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useRef, useState } from "react";
-import { X, FolderOpen, AlertTriangle, ShieldCheck } from "lucide-react";
+import { X, FolderOpen, AlertTriangle, ShieldCheck, Clock } from "lucide-react";
 import DocumentTimeline from "./DocumentTimeline";
 import LaporanSection from "./LaporanSection";
 
@@ -30,6 +30,7 @@ interface Equipment {
   location: string | null;
   inspectionDate: string;
   expiryDate: string;
+  isProsesDinas?: boolean; // WAJIB ADA DI PRISMA SCHEMA LU
   suket?: Suket[];
   laporan?: Laporan[];
 }
@@ -155,6 +156,7 @@ export default function DocumentDrawer({
   const [isDeletingSuketId, setIsDeletingSuketId] = useState<string | null>(null);
   const [isSubmittingLaporan, setIsSubmittingLaporan] = useState(false);
   const [successMsg, setSuccessMsg]               = useState<string | null>(null);
+  const [isTogglingDinas, setIsTogglingDinas]     = useState(false); // State untuk loading switch
 
   // Auto-dismiss success message
   useEffect(() => {
@@ -262,6 +264,34 @@ export default function DocumentDrawer({
     }
   };
 
+  // ── Toggle Proses Dinas ──
+  const handleToggleProsesDinas = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!equipment) return;
+    const newVal = e.target.checked;
+    
+    setIsTogglingDinas(true);
+    try {
+      // Pastikan endpoint PATCH ini ada di backend lu
+      const res = await fetch(`/api/equipments/${equipment.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ isProsesDinas: newVal })
+      });
+      
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.message || "Gagal update status proses dinas");
+      }
+      
+      setSuccessMsg(`Status Proses Dinas ${newVal ? 'diaktifkan' : 'dimatikan'}.`);
+      onDocumentSaved?.(); // Panggil fungsi ini buat refresh tabel
+    } catch (error: any) {
+      alert(error.message);
+    } finally {
+      setIsTogglingDinas(false);
+    }
+  };
+
   if (!isOpen || !equipment) return null;
 
   const suketList   = equipment.suket   ?? [];
@@ -340,26 +370,61 @@ export default function DocumentDrawer({
 
           {/* Info card alat */}
           <div style={{
-            marginTop: 14, padding: "10px 14px",
+            marginTop: 14, padding: "12px 16px",
             background: "#FFFFFF", border: "1.5px solid #EAE7DF",
-            borderRadius: 10,
+            borderRadius: 10, display: "flex", flexDirection: "column", gap: 10
           }}>
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
               <span style={{ fontSize: 14, fontWeight: 600, color: "#1A1A1A" }}>
                 {equipment.name}
               </span>
               <StatusBadge expiryDate={equipment.expiryDate} />
             </div>
             <div style={{ display: "flex", gap: 16 }}>
-              <span style={{ fontSize: 10, color: "#AAAAAA", fontFamily: "monospace" }}>
+              <span style={{ fontSize: 11, color: "#888880", fontFamily: "monospace" }}>
                 Lokasi: {equipment.location || "N/A"}
               </span>
-              <span style={{ fontSize: 10, color: "#AAAAAA", fontFamily: "monospace" }}>
+              <span style={{ fontSize: 11, color: "#888880", fontFamily: "monospace" }}>
                 Habis: {new Date(equipment.expiryDate).toLocaleDateString("id-ID", {
                   day: "2-digit", month: "short", year: "numeric",
                 })}
               </span>
             </div>
+
+            {/* Toggle Proses Dinas Khusus Admin */}
+            {userRole === "SUPERADMIN" && (
+              <div style={{ 
+                display: "flex", alignItems: "center", justifyContent: "space-between", 
+                paddingTop: 12, borderTop: "1px dashed #EAE7DF", marginTop: 4 
+              }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                  <Clock size={14} color="#3B82F6" />
+                  <span style={{ fontSize: 12, fontWeight: 600, color: "#555550" }}>Status Proses Dinas</span>
+                </div>
+                
+                <label style={{ display: "flex", alignItems: "center", cursor: isTogglingDinas ? "wait" : "pointer", position: "relative" }}>
+                  <input 
+                    type="checkbox" 
+                    checked={equipment.isProsesDinas || false}
+                    onChange={handleToggleProsesDinas}
+                    disabled={isTogglingDinas}
+                    style={{ opacity: 0, width: 0, height: 0, position: "absolute" }} 
+                  />
+                  <div style={{ 
+                    width: 40, height: 22, borderRadius: 20, 
+                    background: equipment.isProsesDinas ? "#3B82F6" : "#E5E2D8",
+                    transition: "0.3s", position: "relative",
+                    opacity: isTogglingDinas ? 0.6 : 1
+                  }}>
+                    <div style={{
+                      width: 18, height: 18, borderRadius: "50%", background: "#FFF",
+                      position: "absolute", top: 2, left: equipment.isProsesDinas ? 20 : 2,
+                      transition: "0.3s", boxShadow: "0 2px 4px rgba(0,0,0,0.15)"
+                    }} />
+                  </div>
+                </label>
+              </div>
+            )}
           </div>
 
           {/* Success toast */}

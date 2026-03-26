@@ -3,7 +3,7 @@ import { prisma } from '@/lib/prisma';
 import * as jwt from 'jsonwebtoken';
 import { cookies } from 'next/headers';
 
-// PATCH: Memperbarui Data Inti Alat
+// PATCH: Memperbarui Data Inti Alat (Mendukung Partial Update)
 export async function PATCH(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
@@ -27,10 +27,25 @@ export async function PATCH(
     const equipmentId = resolvedParams.id;
 
     const body = await request.json();
+
+    // 1. Cek apakah ini HANYA request untuk toggle isProsesDinas
+    const isOnlyTogglingDinas = Object.keys(body).length === 1 && 'isProsesDinas' in body;
+
+    if (isOnlyTogglingDinas) {
+      const updatedEq = await prisma.equipment.update({
+        where: { id: equipmentId },
+        data: { isProsesDinas: body.isProsesDinas },
+      });
+      return NextResponse.json(
+        { message: 'Status Proses Dinas berhasil diperbarui', equipment: updatedEq },
+        { status: 200 }
+      );
+    }
+
+    // 2. Kalau bukan sekadar toggle, berarti Edit Data Penuh dari Form. Jalankan validasi ketat.
     const {
       name, location, permitNumber, serialNumber,
       inspectionDate, expiryDate,
-      // Field baru (opsional)
       area, brand, capacity, description,
     } = body;
 
@@ -47,7 +62,7 @@ export async function PATCH(
         name, location, permitNumber, serialNumber,
         inspectionDate: new Date(inspectionDate),
         expiryDate:     new Date(expiryDate),
-        // Field baru — simpan null kalau dikosongkan (bukan undefined)
+        // Field opsional — simpan null kalau dikosongkan
         area:        area        ?? null,
         brand:       brand       ?? null,
         capacity:    capacity    ?? null,
@@ -95,7 +110,9 @@ export async function DELETE(
     // EmailLog tidak pakai cascade di schema, hapus manual dulu
     await prisma.emailLog.deleteMany({ where: { equipmentId } });
 
-    // Suket & Laporan pakai onDelete: Cascade, ikut terhapus otomatis
+    // Suket & Laporan pakai onDelete: Cascade, ikut terhapus otomatis di DB
+    // CATATAN: File fisik di Vercel Blob DARI suket & laporan akan menjadi yatim/tertinggal
+    // kalau lu nggak ngeloop dan ngehapus filenya satu-satu di sini sebelum hapus equipment.
     await prisma.equipment.delete({ where: { id: equipmentId } });
 
     return NextResponse.json(

@@ -5,11 +5,10 @@ import {
   Wrench, Building2, Search, Loader2, FileUp,
   AlertTriangle, ShieldCheck, XOctagon, ChevronRight,
   CheckCircle2, Download, Edit, Trash2, ChevronLeft,
-  Plus, Send, MailWarning, FolderOpen,
+  Plus, Send, MailWarning, FolderOpen, Clock
 } from "lucide-react";
 import * as XLSX from "xlsx-js-style";
 import DocumentDrawer from "@/components/equipment/DocumentDrawer";
-import EquipmentDetailPanel from "@/components/equipment/EquipmentDetailPanel";
 import { useConfirm } from "@/components/providers/confirm-dialog";
 
 // ============================================================
@@ -26,6 +25,7 @@ interface Equipment {
   brand?:       string | null;
   capacity?:    string | null;
   description?: string | null;
+  isProsesDinas?: boolean; // TAMBAHAN DATABASE BARU LU
   suket?:       Suket[];
   laporan?:     Laporan[];
   company?:     { name: string };
@@ -86,9 +86,7 @@ export default function EquipmentsPage() {
   const [isUploading, setIsUploading]       = useState(false);
   const [statusMsg, setStatusMsg]           = useState<{ type: "error" | "success"; text: string } | null>(null);
 
-  // Panel & drawer
-  const [panelOpen, setPanelOpen]   = useState(false);
-  const [panelEq, setPanelEq]       = useState<Equipment | null>(null);
+  // Drawer
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [activeEq, setActiveEq]     = useState<Equipment | null>(null);
 
@@ -149,10 +147,6 @@ export default function EquipmentsPage() {
       if (userRole === "SUPERADMIN" && companyId)
         data = data.filter((eq) => eq.companyId === companyId);
       setEquipments(data);
-      if (panelEq) {
-        const updated = data.find((eq) => eq.id === panelEq.id);
-        if (updated) setPanelEq(updated);
-      }
       if (activeEq) {
         const updated = data.find((eq) => eq.id === activeEq.id);
         if (updated) setActiveEq(updated);
@@ -242,7 +236,6 @@ export default function EquipmentsPage() {
       const res = await fetch(`/api/equipments/${id}`, { method: "DELETE" });
       if (!res.ok) throw new Error("Gagal menghapus data alat.");
       setStatusMsg({ type: "success", text: "Alat berhasil dihapus." });
-      if (panelEq?.id === id) setPanelOpen(false);
       fetchEquipments(selectedCompanyId);
       setSelectedEqIds((prev) => prev.filter((x) => x !== id));
     } catch (err: any) {
@@ -534,10 +527,13 @@ export default function EquipmentsPage() {
         .eq-insp-date { font-size:12px; color:#555550; font-family:monospace; }
         .eq-expiry    { font-size:12px; color:#555550; font-family:monospace; }
 
+        /* BADGES */
         .eq-badge         { display:inline-flex; align-items:center; gap:5px; padding:3px 9px; border-radius:999px; font-size:10px; font-weight:500; text-transform:uppercase; letter-spacing:0.06em; white-space:nowrap; }
         .eq-badge.safe    { background:rgba(34,160,100,0.07);  border:1px solid rgba(34,160,100,0.18);  color:#22A064; }
         .eq-badge.warning { background:rgba(240,165,0,0.08);   border:1px solid rgba(240,165,0,0.2);    color:#C87A00; }
         .eq-badge.danger  { background:rgba(220,60,60,0.07);   border:1px solid rgba(220,60,60,0.18);   color:#DC3C3C; }
+        /* Badge Tambahan: Proses Dinas */
+        .eq-badge.process { background:rgba(59,130,246,0.08);  border:1px solid rgba(59,130,246,0.22);  color:#3B82F6; }
 
         .eq-empty       { display:flex; flex-direction:column; align-items:center; justify-content:center; min-height:340px; text-align:center; padding:40px 20px; position: sticky; left: 0;}
         .eq-empty-icon  { width:56px; height:56px; background:#F5F3EE; border:1.5px solid #E5E2D8; border-radius:14px; display:flex; align-items:center; justify-content:center; margin:0 auto 16px; color:#CCCCCC; }
@@ -730,7 +726,6 @@ export default function EquipmentsPage() {
                           const isSelected = selectedEqIds.includes(eq.id);
                           const hasDocs    = (eq.suket?.length ?? 0) > 0 || (eq.laporan?.length ?? 0) > 0;
                           
-                          // Pastikan cell yang beku warnanya ikut berubah saat di-select
                           const stickyBg = isSelected ? "#FDFCF8" : "#FFFFFF";
 
                           return (
@@ -740,7 +735,6 @@ export default function EquipmentsPage() {
                                   checked={isSelected} onChange={() => toggleSelectEq(eq.id)} />
                               </td>
                               
-                              {/* Kolom Nama Alat dimodif biar text bisa word-break */}
                               <td className="sticky-col" style={{ 
                                 position: "sticky", 
                                 left: 40, 
@@ -752,8 +746,9 @@ export default function EquipmentsPage() {
                                 wordBreak: "break-word",
                                 lineHeight: 1.4
                               }}>
-                                <p className="eq-eq-name" onClick={() => { setPanelEq(eq); setPanelOpen(true); }}>
+                                <p className="eq-eq-name" onClick={() => { setActiveEq(eq); setDrawerOpen(true); }}>
                                   {eq.name}
+                                  {eq.name.toLowerCase() === 'lift' || eq.name.toLowerCase() === 'crane' ? ` - ${eq.area || eq.location || eq.serialNumber}` : ''}
                                 </p>
                               </td>
 
@@ -772,12 +767,26 @@ export default function EquipmentsPage() {
                                   {new Date(eq.expiryDate).toLocaleDateString("id-ID", { day: "2-digit", month: "short", year: "numeric" })}
                                 </span>
                               </td>
+
+                              {/* KOLOM STATUS GANDA */}
                               <td>
-                                <span className={`eq-badge ${status.variant}`}>
-                                  <StatusIcon size={10} />
-                                  {status.label} ({status.days < 0 ? "Lewat" : `${status.days}hr`})
-                                </span>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', alignItems: 'flex-start' }}>
+                                  
+                                  {/* Badge 1: Status Waktu (Aman/Warning/Expired) */}
+                                  <span className={`eq-badge ${status.variant}`}>
+                                    <StatusIcon size={10} />
+                                    {status.label} ({status.days < 0 ? "Lewat" : `${status.days}hr`})
+                                  </span>
+
+                                  {/* Badge 2: Status Manual dari Database */}
+                                  {eq.isProsesDinas && (
+                                    <span className="eq-badge process" style={{ marginTop: 0 }}>
+                                      <Clock size={10} /> Proses Dinas
+                                    </span>
+                                  )}
+                                </div>
                               </td>
+
                               <td style={{ maxWidth: 200, overflow: "hidden", textOverflow: "ellipsis", color: "#888880", fontSize: 12 }}>
                                 {eq.description || "-"}
                               </td>
@@ -834,16 +843,6 @@ export default function EquipmentsPage() {
           </div>
         </div>
       </div>
-
-      {/* ── DETAIL PANEL ── */}
-      <EquipmentDetailPanel
-        equipment={panelEq}
-        isOpen={panelOpen}
-        userRole={userRole}
-        onClose={() => setPanelOpen(false)}
-        onEdit={(eq) => { setPanelOpen(false); setEditingEq(eq); setIsEditModalOpen(true); }}
-        onDocument={(eq) => { setPanelOpen(false); setActiveEq(eq); setDrawerOpen(true); }}
-      />
 
       {/* ── DOCUMENT DRAWER ── */}
       <DocumentDrawer
