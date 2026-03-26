@@ -3,17 +3,22 @@
 import React, { useEffect, useState } from "react";
 import {
   Settings, Mail, Globe, Building2,
-  Loader2, AlertTriangle, ShieldCheck,
+  Loader2, AlertTriangle, ShieldCheck, FileCheck, MailWarning
 } from "lucide-react";
 import EmailTemplateEditor from "@/components/settings/EmailTemplateEditor";
 
 interface Company { id: string; name: string; }
 
+// Tipe Template yang didukung sistem sekarang
+type TemplateType = "EXPIRED_SINGLE" | "EXPIRED_BULK" | "READY_SINGLE" | "READY_BULK";
+
 export default function SettingsPage() {
   const [userRole, setUserRole]     = useState<string | null>(null);
   const [companies, setCompanies]   = useState<Company[]>([]);
   const [isLoading, setIsLoading]   = useState(true);
-  const [activeTab, setActiveTab]   = useState<"SINGLE" | "BULK">("SINGLE");
+  
+  // Kita ganti Tab-nya jadi lebih spesifik ke fungsinya
+  const [activeTab, setActiveTab]   = useState<"EXPIRED" | "READY">("EXPIRED");
 
   useEffect(() => {
     const stored = localStorage.getItem("userProfile");
@@ -64,7 +69,7 @@ export default function SettingsPage() {
         @keyframes st-fadeup { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:translateY(0); } }
         @keyframes st-spin   { to { transform: rotate(360deg); } }
 
-        .st-inner { padding:28px 20px; max-width:860px; margin:0 auto; animation: st-fadeup 0.4s ease both; }
+        .st-inner { padding:28px 20px; max-width:960px; margin:0 auto; animation: st-fadeup 0.4s ease both; }
         @media (min-width:768px)  { .st-inner { padding:40px 32px; } }
         @media (min-width:1024px) { .st-inner { padding:48px 48px; } }
 
@@ -84,6 +89,9 @@ export default function SettingsPage() {
         .st-tab-bar  { display:flex; gap:6px; background:#F5F3EE; padding:5px; border-radius:10px; border:1.5px solid #EAE7DF; margin-bottom:20px; }
         .st-tab-btn  { flex:1; padding:10px; font-size:12px; font-weight:500; border-radius:7px; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:6px; transition:0.2s; border:none; background:transparent; color:#AAAAAA; font-family:inherit; }
         .st-tab-btn.active { background:#FFFFFF; color:#C87A00; border:1.5px solid rgba(240,165,0,0.25); box-shadow:0 1px 4px rgba(0,0,0,0.06); }
+        
+        .st-grid-editors { display: grid; grid-template-columns: 1fr; gap: 24px; }
+        @media (min-width: 1280px) { .st-grid-editors { grid-template-columns: 1fr 1fr; } }
       `}</style>
 
       <div className="st-root" style={{ background: "#FAFAF8", minHeight: "100vh" }}>
@@ -95,7 +103,7 @@ export default function SettingsPage() {
             <span className="st-title-icon"><Settings size={18} /></span>
             Pengaturan Sistem
           </h1>
-          <p className="st-page-desc">Konfigurasi template email dan preferensi sistem M-Track.</p>
+          <p className="st-page-desc">Konfigurasi template email notifikasi dan preferensi sistem.</p>
           <div className="st-divider" />
 
           {isLoading ? (
@@ -105,83 +113,72 @@ export default function SettingsPage() {
             </div>
           ) : (
             <>
-              {/* ── SECTION: Email Template ── */}
-              <div className="st-section">
-                <div className="st-section-header">
-                  <span className="st-section-icon"><Mail size={14} /></span>
-                  <div>
-                    <p className="st-section-title">Template Email Notifikasi</p>
-                    <p className="st-section-desc">
-                      Atur teks yang dikirim ke klien saat notifikasi alat dikirim
-                    </p>
-                  </div>
-                </div>
-
-                <div className="st-section-body">
-                  {/* Tab SINGLE vs BULK */}
-                  <div className="st-tab-bar">
-                    <button
-                      className={`st-tab-btn ${activeTab === "SINGLE" ? "active" : ""}`}
-                      onClick={() => setActiveTab("SINGLE")}
-                    >
-                      <Mail size={13} />
-                      Notif Per Alat
-                    </button>
-                    <button
-                      className={`st-tab-btn ${activeTab === "BULK" ? "active" : ""}`}
-                      onClick={() => setActiveTab("BULK")}
-                    >
-                      <Globe size={13} />
-                      Notif Massal
-                    </button>
-                  </div>
-
-                  {/* Editor */}
-                  {activeTab === "SINGLE" && (
-                    <EmailTemplateEditor
-                      type="SINGLE"
-                      label="Notifikasi Per Alat"
-                      description='Digunakan saat admin menekan tombol "Kirim Notif" pada satu alat tertentu di halaman Equipment.'
-                      companies={companies}
-                    />
-                  )}
-                  {activeTab === "BULK" && (
-                    <EmailTemplateEditor
-                      type="BULK"
-                      label="Notifikasi Massal"
-                      description='Digunakan saat admin menekan tombol "Alert Expired" atau memilih beberapa alat dan menekan "Kirim Pilihan".'
-                      companies={companies}
-                    />
-                  )}
-                </div>
+              {/* ── TAB PILIHAN URUSAN ── */}
+              <div className="st-tab-bar">
+                <button 
+                  className={`st-tab-btn ${activeTab === "EXPIRED" ? "active" : ""}`}
+                  onClick={() => setActiveTab("EXPIRED")}
+                >
+                  <MailWarning size={13} />
+                  Peringatan Expired
+                </button>
+                <button 
+                  className={`st-tab-btn ${activeTab === "READY" ? "active" : ""}`}
+                  onClick={() => setActiveTab("READY")}
+                >
+                  <FileCheck size={13} />
+                  Notif Dokumen Ready
+                </button>
               </div>
 
-              {/* ── SECTION: Info sistem (placeholder untuk fitur lain nanti) ── */}
-              <div className="st-section">
+              {/* ── EDITOR TEMPLATE ── */}
+              {activeTab === "EXPIRED" ? (
+                <div className="st-grid-editors">
+                  <EmailTemplateEditor
+                    type="EXPIRED_SINGLE"
+                    label="Peringatan (Per Alat)"
+                    description="Kirim link per alat yang hampir kedaluwarsa."
+                    companies={companies}
+                  />
+                  <EmailTemplateEditor
+                    type="EXPIRED_BULK"
+                    label="Peringatan (Massal)"
+                    description="Kirim ringkasan banyak alat yang kedaluwarsa sekaligus."
+                    companies={companies}
+                  />
+                </div>
+              ) : (
+                <div className="st-grid-editors">
+                  <EmailTemplateEditor
+                    type="READY_SINGLE"
+                    label="Dokumen Ready (Per Alat)"
+                    description="Beritahu klien bahwa Suket/Laporan alat ini sudah siap."
+                    companies={companies}
+                  />
+                  <EmailTemplateEditor
+                    type="READY_BULK"
+                    label="Dokumen Ready (Massal)"
+                    description="Kirim daftar alat yang dokumennya baru saja selesai diupload."
+                    companies={companies}
+                  />
+                </div>
+              )}
+
+              {/* ── SECTION: Placeholder Variabel ── */}
+              <div className="st-section" style={{ marginTop: 24 }}>
                 <div className="st-section-header">
-                  <span className="st-section-icon"><ShieldCheck size={14} /></span>
-                  <div>
-                    <p className="st-section-title">Informasi Sistem</p>
-                    <p className="st-section-desc">Status konfigurasi M-Track saat ini</p>
-                  </div>
+                  <span className="st-section-icon"><Globe size={14} /></span>
+                  <p className="st-section-title">Variabel Magic Link</p>
                 </div>
                 <div className="st-section-body">
-                  <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                    {[
-                      { label: "Total Klien Aktif",    value: `${companies.length} perusahaan` },
-                      { label: "Email Pengirim",        value: process.env.NEXT_PUBLIC_SMTP_USER || "Dikonfigurasi via .env" },
-                      { label: "Template Global",       value: "SINGLE + BULK tersedia" },
-                    ].map((item) => (
-                      <div key={item.label} style={{
-                        display: "flex", justifyContent: "space-between", alignItems: "center",
-                        padding: "10px 14px", background: "#FAFAF7",
-                        border: "1.5px solid #EAE7DF", borderRadius: 9,
-                      }}>
-                        <span style={{ fontSize: 12, color: "#888880", fontWeight: 500 }}>{item.label}</span>
-                        <span style={{ fontSize: 12, color: "#555550", fontFamily: "monospace" }}>{item.value}</span>
-                      </div>
-                    ))}
-                  </div>
+                   <p style={{ fontSize: 12, color: "#888", marginBottom: 12 }}>
+                     Gunakan variabel di bawah ini di dalam template agar link otomatis ter-generate:
+                   </p>
+                   <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
+                      <code>{`{{link_alat}}`}</code>
+                      <code>{`{{nama_klien}}`}</code>
+                      <code>{`{{nama_alat}}`}</code>
+                   </div>
                 </div>
               </div>
             </>

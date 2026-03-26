@@ -7,23 +7,53 @@ import {
 } from "lucide-react";
 
 // ============================================================
-// TIPE
+// TIPE & DEFAULTS
 // ============================================================
+type TemplateType = "EXPIRED_SINGLE" | "EXPIRED_BULK" | "READY_SINGLE" | "READY_BULK";
+
 interface TemplateData {
-  id?:        string | null;
+  id?:         string | null;
   senderName: string;
   subject:    string;
   introText:  string;
   footerText: string;
 }
 
+// DATA DEFAULT BIAR ADMIN NGGAK BINGUNG MULAI DARI NOL
+const DEFAULT_TEMPLATES: Record<TemplateType, TemplateData> = {
+  EXPIRED_SINGLE: {
+    senderName: "MARIS System",
+    subject: "[PERINGATAN] Masa Berlaku Alat: {{equipmentName}} Segera Berakhir",
+    introText: "Kami menginformasikan bahwa alat {{equipmentName}} milik {{companyName}} akan segera habis masa berlakunya. Silakan ajukan inspeksi ulang melalui tombol di bawah ini.",
+    footerText: "Abaikan email ini jika Anda sudah melakukan proses perpanjangan. Segera urus sebelum operasional terhambat."
+  },
+  EXPIRED_BULK: {
+    senderName: "MARIS System",
+    subject: "[ALERT] Daftar Alat {{companyName}} yang Kedaluwarsa",
+    introText: "Ditemukan beberapa alat berat milik {{companyName}} yang masa berlakunya hampir habis atau sudah kedaluwarsa. Berikut rinciannya:",
+    footerText: "Silakan klik link masing-masing alat untuk mengajukan permohonan inspeksi ulang secara online."
+  },
+  READY_SINGLE: {
+    senderName: "Admin Marusindo",
+    subject: "[DOKUMEN SIAP] Suket & Laporan Alat: {{equipmentName}}",
+    introText: "Kabar baik! Dokumen Suket dan Laporan untuk alat {{equipmentName}} sudah selesai diproses dan siap diunduh.",
+    footerText: "Klik link di bawah untuk melihat dokumen dan mengunduhnya langsung dari dashboard MARIS."
+  },
+  READY_BULK: {
+    senderName: "Admin Marusindo",
+    subject: "[UPDATE] Dokumen Alat {{companyName}} Sudah Tersedia",
+    introText: "Proses administrasi untuk beberapa alat Anda telah selesai. Anda sekarang dapat mengakses Suket dan Laporan terbaru.",
+    footerText: "Terima kasih telah menggunakan jasa PT Marusindo Berkah Jaya. Dokumen fisik akan dikirimkan menyusul jika diperlukan."
+  }
+};
+
 interface Company { id: string; name: string; }
 
 interface EmailTemplateEditorProps {
-  type:        "SINGLE" | "BULK";
+  type:        TemplateType; // UPDATE: Pakai 4 tipe baru
   label:       string;
   description: string;
-  companies:   Company[];
+  companies:    Company[];
 }
 
 // ============================================================
@@ -31,7 +61,8 @@ interface EmailTemplateEditorProps {
 // ============================================================
 const PLACEHOLDERS = [
   { tag: "{{companyName}}",   desc: "Nama perusahaan klien" },
-  { tag: "{{equipmentName}}", desc: "Nama alat (SINGLE only)" },
+  { tag: "{{equipmentName}}", desc: "Nama alat (Khusus SINGLE)" },
+  { tag: "{{link_alat}}",     desc: "Link ajaib ke dashboard alat" }, // TAMBAHAN MAGIC LINK
 ];
 
 const inputStyle: React.CSSProperties = {
@@ -122,7 +153,7 @@ function TemplateForm({
             </label>
             <input
               type="text" style={inputStyle}
-              placeholder="[PERHATIAN] Status Alat: {{equipmentName}}"
+              placeholder="Contoh: [INFO] Status Alat"
               value={data.subject}
               onChange={(e) => onChange("subject", e.target.value)}
             />
@@ -135,7 +166,7 @@ function TemplateForm({
             </label>
             <textarea
               style={textareaStyle}
-              placeholder="Teks pembuka di atas tabel alat..."
+              placeholder="Teks pembuka..."
               value={data.introText}
               onChange={(e) => onChange("introText", e.target.value)}
             />
@@ -144,11 +175,11 @@ function TemplateForm({
           {/* Footer */}
           <div>
             <label style={{ display: "block", fontSize: 11, fontWeight: 600, color: "#555550", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 6 }}>
-              Pesan Footer / Peringatan
+              Pesan Footer / Penutup
             </label>
             <textarea
               style={textareaStyle}
-              placeholder="Catatan penutup di bawah tabel alat..."
+              placeholder="Catatan penutup..."
               value={data.footerText}
               onChange={(e) => onChange("footerText", e.target.value)}
             />
@@ -182,6 +213,7 @@ function TemplateForm({
               <button
                 onClick={onReset}
                 disabled={isSaving}
+                className="st-reset-btn"
                 style={{
                   padding: "9px 14px", borderRadius: 9,
                   background: "#F5F3EE", border: "1.5px solid #E5E2D8",
@@ -189,16 +221,6 @@ function TemplateForm({
                   color: "#888880", cursor: "pointer",
                   display: "flex", alignItems: "center", gap: 6,
                   transition: "0.15s",
-                }}
-                onMouseEnter={(e) => {
-                  (e.currentTarget as HTMLElement).style.background = "rgba(220,60,60,0.06)";
-                  (e.currentTarget as HTMLElement).style.color = "#DC3C3C";
-                  (e.currentTarget as HTMLElement).style.borderColor = "rgba(220,60,60,0.2)";
-                }}
-                onMouseLeave={(e) => {
-                  (e.currentTarget as HTMLElement).style.background = "#F5F3EE";
-                  (e.currentTarget as HTMLElement).style.color = "#888880";
-                  (e.currentTarget as HTMLElement).style.borderColor = "#E5E2D8";
                 }}
               >
                 <RotateCcw size={12} /> Reset ke Global
@@ -236,18 +258,15 @@ function TemplateForm({
 export default function EmailTemplateEditor({
   type, label, description, companies,
 }: EmailTemplateEditorProps) {
+  
   // ── Global state ──
-  const [globalData, setGlobalData] = useState<TemplateData>({
-    senderName: "M-Track Marusindo", subject: "", introText: "", footerText: "",
-  });
+  const [globalData, setGlobalData] = useState<TemplateData>(DEFAULT_TEMPLATES[type]);
   const [isSavingGlobal, setIsSavingGlobal] = useState(false);
   const [globalMsg, setGlobalMsg]           = useState<{ type: "success" | "error"; text: string } | null>(null);
 
   // ── Per-company override state ──
   const [selectedCompanyId, setSelectedCompanyId]   = useState<string>("");
-  const [overrideData, setOverrideData]             = useState<TemplateData>({
-    senderName: "M-Track Marusindo", subject: "", introText: "", footerText: "",
-  });
+  const [overrideData, setOverrideData]             = useState<TemplateData>(DEFAULT_TEMPLATES[type]);
   const [isOverrideActive, setIsOverrideActive]     = useState(false);
   const [isSavingOverride, setIsSavingOverride]     = useState(false);
   const [isLoadingOverride, setIsLoadingOverride]   = useState(false);
@@ -271,17 +290,23 @@ export default function EmailTemplateEditor({
   useEffect(() => {
     const load = async () => {
       try {
-        const res  = await fetch("/api/email-templates");
+        const res  = await fetch(`/api/email-templates?type=${type}`);
         const data = await res.json();
-        if (data[type]) {
+        if (data) {
           setGlobalData({
-            senderName: data[type].senderName || "M-Track Marusindo",
-            subject:    data[type].subject    || "",
-            introText:  data[type].introText  || "",
-            footerText: data[type].footerText || "",
+            senderName: data.senderName || DEFAULT_TEMPLATES[type].senderName,
+            subject:    data.subject    || DEFAULT_TEMPLATES[type].subject,
+            introText:  data.introText  || DEFAULT_TEMPLATES[type].introText,
+            footerText: data.footerText || DEFAULT_TEMPLATES[type].footerText,
           });
+        } else {
+            // Jika benar-benar kosong di DB, pakai default mentah
+            setGlobalData(DEFAULT_TEMPLATES[type]);
         }
-      } catch (e) { console.error(e); }
+      } catch (e) { 
+          console.error(e);
+          setGlobalData(DEFAULT_TEMPLATES[type]);
+      }
     };
     load();
   }, [type]);
@@ -292,19 +317,17 @@ export default function EmailTemplateEditor({
     const load = async () => {
       setIsLoadingOverride(true);
       try {
-        const res  = await fetch(`/api/email-templates/${selectedCompanyId}`);
+        const res  = await fetch(`/api/email-templates/${selectedCompanyId}?type=${type}`);
         const data = await res.json();
-        const tpl  = data[type];
-        if (tpl) {
+        if (data) {
           setOverrideData({
-            senderName: tpl.senderName || "M-Track Marusindo",
-            subject:    tpl.subject    || "",
-            introText:  tpl.introText  || "",
-            footerText: tpl.footerText || "",
+            senderName: data.senderName || "M-Track Marusindo",
+            subject:    data.subject    || "",
+            introText:  data.introText  || "",
+            footerText: data.footerText || "",
           });
           setIsOverrideActive(true);
         } else {
-          // Belum ada override — prefill dari global
           setOverrideData({ ...globalData });
           setIsOverrideActive(false);
         }
@@ -315,7 +338,7 @@ export default function EmailTemplateEditor({
       }
     };
     load();
-  }, [selectedCompanyId]);
+  }, [selectedCompanyId, type, globalData]);
 
   // ── Save global ──
   const handleSaveGlobal = async () => {
@@ -355,7 +378,7 @@ export default function EmailTemplateEditor({
     }
   };
 
-  // ── Reset override (hapus → kembali ke global) ──
+  // ── Reset override ──
   const handleResetOverride = async () => {
     if (!selectedCompanyId) return;
     if (!confirm("Hapus override ini? Klien akan kembali menggunakan template global.")) return;
@@ -379,15 +402,13 @@ export default function EmailTemplateEditor({
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-
-      {/* ── Deskripsi section ── */}
+      {/* ── Deskripsi ── */}
       <div style={{ padding: "12px 16px", background: "#FAFAF7", border: "1.5px solid #EAE7DF", borderRadius: 10 }}>
         <p style={{ fontSize: 12, color: "#888880", margin: 0, lineHeight: 1.6 }}>
           {description}
         </p>
       </div>
 
-      {/* ── Status message ── */}
       {globalMsg && (
         <div style={{
           display: "flex", alignItems: "center", gap: 8,
@@ -401,9 +422,9 @@ export default function EmailTemplateEditor({
         </div>
       )}
 
-      {/* ── Global template form ── */}
+      {/* ── Global form ── */}
       <TemplateForm
-        title={`Template Global — ${label}`}
+        title={`Global — ${label}`}
         badge="Default"
         data={globalData}
         isSaving={isSavingGlobal}
@@ -412,7 +433,6 @@ export default function EmailTemplateEditor({
         onSave={handleSaveGlobal}
       />
 
-      {/* ── Toggle override section ── */}
       <button
         onClick={() => setShowOverrideSection((v) => !v)}
         style={{
@@ -426,34 +446,24 @@ export default function EmailTemplateEditor({
         }}
       >
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <Building2 size={14} />
-          Override per Klien
+          <Building2 size={14} /> Klien Spesifik (Override)
         </div>
         {showOverrideSection ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
       </button>
 
-      {/* ── Override section ── */}
       {showOverrideSection && (
         <div style={{ display: "flex", flexDirection: "column", gap: 12, paddingLeft: 4 }}>
+          <select
+            value={selectedCompanyId}
+            onChange={(e) => setSelectedCompanyId(e.target.value)}
+            style={{ ...inputStyle, cursor: "pointer" }}
+          >
+            <option value="">-- Pilih PT untuk atur template khusus --</option>
+            {companies.map((c) => (
+              <option key={c.id} value={c.id}>{c.name}</option>
+            ))}
+          </select>
 
-          {/* Pilih company */}
-          <div>
-            <label style={{ display: "block", fontSize: 11, fontWeight: 600, color: "#555550", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 6 }}>
-              Pilih Klien
-            </label>
-            <select
-              value={selectedCompanyId}
-              onChange={(e) => setSelectedCompanyId(e.target.value)}
-              style={{ ...inputStyle, cursor: "pointer" }}
-            >
-              <option value="">-- Pilih perusahaan --</option>
-              {companies.map((c) => (
-                <option key={c.id} value={c.id}>{c.name}</option>
-              ))}
-            </select>
-          </div>
-
-          {/* Loading override */}
           {isLoadingOverride && (
             <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "12px 16px", color: "#AAAAAA", fontSize: 12 }}>
               <Loader2 size={14} style={{ animation: "spin 1s linear infinite" }} />
@@ -461,7 +471,6 @@ export default function EmailTemplateEditor({
             </div>
           )}
 
-          {/* Override status message */}
           {overrideMsg && (
             <div style={{
               display: "flex", alignItems: "center", gap: 8,
@@ -475,11 +484,10 @@ export default function EmailTemplateEditor({
             </div>
           )}
 
-          {/* Form override */}
           {selectedCompanyId && !isLoadingOverride && (
             <TemplateForm
               title={`Override — ${companies.find((c) => c.id === selectedCompanyId)?.name ?? ""}`}
-              badge={isOverrideActive ? "Override Aktif" : "Belum di-override"}
+              badge={isOverrideActive ? "Customized" : "Mengikuti Global"}
               data={overrideData}
               isSaving={isSavingOverride}
               isOverride={isOverrideActive}
@@ -488,20 +496,13 @@ export default function EmailTemplateEditor({
               onReset={handleResetOverride}
             />
           )}
-
-          {!selectedCompanyId && (
-            <div style={{
-              textAlign: "center", padding: "20px 16px",
-              background: "#FAFAF7", border: "1.5px dashed #E5E2D8",
-              borderRadius: 10, color: "#AAAAAA", fontSize: 12,
-            }}>
-              Pilih klien di atas untuk melihat atau mengatur override template-nya.
-            </div>
-          )}
         </div>
       )}
 
-      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+      <style>{`
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .st-reset-btn:hover { background: rgba(220,60,60,0.06) !important; color: #DC3C3C !important; border-color: rgba(220,60,60,0.2) !important; }
+      `}</style>
     </div>
   );
 }

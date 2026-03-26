@@ -5,7 +5,7 @@ import {
   Wrench, Building2, Search, Loader2, FileUp,
   AlertTriangle, ShieldCheck, XOctagon, ChevronRight,
   CheckCircle2, Download, Edit, Trash2, ChevronLeft,
-  Plus, Send, MailWarning, FolderOpen, Clock
+  Plus, Send, MailWarning, FolderOpen, Clock, FileCheck
 } from "lucide-react";
 import * as XLSX from "xlsx-js-style";
 import DocumentDrawer from "@/components/equipment/DocumentDrawer";
@@ -21,9 +21,9 @@ interface Equipment {
   id: string; name: string; permitNumber: string; serialNumber: string;
   location: string | null; inspectionDate: string; expiryDate: string;
   companyId?: string;
-  area?:         string | null;
-  brand?:        string | null;
-  capacity?:     string | null;
+  area?:          string | null;
+  brand?:         string | null;
+  capacity?:      string | null;
   description?: string | null;
   isProsesDinas?: boolean; // TAMBAHAN DATABASE BARU LU
   suket?:       Suket[];
@@ -340,6 +340,53 @@ export default function EquipmentsPage() {
     }
   };
 
+  // ── Admin Notify (DITINGKATKAN) ──
+  const handleAdminNotify = async (type: 'expired' | 'ready') => {
+    if (!selectedCompanyId) return;
+    const isCustom = selectedEqIds.length > 0;
+    
+    const config = type === 'expired' 
+      ? { title: "Alert Expired", label: "Peringatan Expired", variant: "danger" as const, icon: MailWarning }
+      : { title: "Notif Dokumen", label: "Notif Dokumen Ready", variant: "info" as const, icon: FileCheck };
+
+    const ok = await confirm({
+      variant: config.variant,
+      title: config.title,
+      description: isCustom 
+        ? `Kirim ${config.label.toLowerCase()} untuk ${selectedEqIds.length} alat yang dipilih?`
+        : `Tidak ada alat dipilih. Kirim ${config.label.toLowerCase()} ke semua alat yang sesuai?`,
+      confirmLabel: "Ya, Kirim",
+      cancelLabel: "Batal",
+    });
+
+    if (!ok) return;
+
+    setIsNotifyingBulkAll(true);
+    setStatusMsg(null);
+
+    try {
+      // Kita pakai endpoint notify-bulk yang lebih generic
+      const res = await fetch(`/api/companies/${selectedCompanyId}/notify-bulk`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ 
+          selectedIds: selectedEqIds,
+          type: type // 'expired' atau 'ready'
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || "Gagal mengirim notifikasi.");
+
+      setStatusMsg({ type: "success", text: data.message });
+      setSelectedEqIds([]);
+    } catch (err: any) {
+      setStatusMsg({ type: "error", text: err.message });
+    } finally {
+      setIsNotifyingBulkAll(false);
+    }
+  };
+
   // ── Notify single ──
   const handleManualNotify = async (eq: Equipment) => {
     const ok = await confirm({
@@ -357,36 +404,6 @@ export default function EquipmentsPage() {
       setStatusMsg({ type: "error", text: err.message });
     } finally {
       setNotifyingId(null);
-    }
-  };
-
-  // ── Notify bulk ──
-  const handleNotifyBulk = async () => {
-    if (!selectedCompanyId) return;
-    const isCustom = selectedEqIds.length > 0;
-    const ok = await confirm({
-      variant: "info",
-      title: isCustom ? "Kirim Notifikasi Pilihan" : "Alert Expired",
-      description: isCustom
-        ? `Kirim notifikasi email untuk ${selectedEqIds.length} alat yang dipilih?`
-        : "Tidak ada alat dipilih. Kirim peringatan ke semua alat yang sudah kedaluwarsa?",
-      confirmLabel: "Ya, Kirim", cancelLabel: "Batal",
-    });
-    if (!ok) return;
-    setIsNotifyingBulkAll(true); setStatusMsg(null);
-    try {
-      const res  = await fetch(`/api/companies/${selectedCompanyId}/notify-expired`, {
-        method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ selectedIds: selectedEqIds }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.message || "Gagal mengirim notifikasi massal.");
-      setStatusMsg({ type: "success", text: data.message });
-      setSelectedEqIds([]);
-    } catch (err: any) {
-      setStatusMsg({ type: "error", text: err.message });
-    } finally {
-      setIsNotifyingBulkAll(false);
     }
   };
 
@@ -543,6 +560,7 @@ export default function EquipmentsPage() {
         .eq-tool-btn:hover:not(:disabled)       { background:#F5F3EE; border-color:#C8C0B0; color:#555550; }
         .eq-tool-btn.amber:hover:not(:disabled) { background:rgba(240,165,0,0.07); border-color:rgba(240,165,0,0.25); color:#C87A00; }
         .eq-tool-btn.red:hover:not(:disabled)   { background:rgba(220,60,60,0.06);  border-color:rgba(220,60,60,0.2);  color:#DC3C3C; }
+        .eq-tool-btn.green:hover:not(:disabled) { background:rgba(34,160,100,0.06); border-color:rgba(34,160,100,0.2); color:#22A064; }
         .eq-tool-btn:disabled { opacity:0.35; cursor:not-allowed; }
         .eq-selected-tag { font-size:11px; font-weight:500; color:#C87A00; background:rgba(240,165,0,0.07); border:1px solid rgba(240,165,0,0.18); border-radius:6px; padding:3px 9px; white-space:nowrap; font-family:monospace; }
 
@@ -718,9 +736,25 @@ export default function EquipmentsPage() {
                       <button className="eq-tool-btn amber" onClick={() => fileInputRef.current?.click()} disabled={!selectedCompanyId || isUploading}>
                         {isUploading ? <Loader2 size={13} className="eq-spinner" /> : <FileUp size={13} />} Import File
                       </button>
-                      <button className="eq-tool-btn red" onClick={handleNotifyBulk} disabled={!selectedCompanyId || isNotifyingBulkAll}>
+                      
+                      {/* PELURU 1: ALERT EXPIRED (NAGIH) */}
+                      <button 
+                        className="eq-tool-btn red" 
+                        onClick={() => handleAdminNotify('expired')} 
+                        disabled={!selectedCompanyId || isNotifyingBulkAll}
+                      >
                         {isNotifyingBulkAll ? <Loader2 size={13} className="eq-spinner" /> : <MailWarning size={13} />}
-                        {selectedEqIds.length > 0 ? `Kirim ${selectedEqIds.length} Pilihan` : "Alert Expired"}
+                        {selectedEqIds.length > 0 ? `Kirim ${selectedEqIds.length} Peringatan` : "Alert Expired"}
+                      </button>
+
+                      {/* PELURU 2: NOTIF DOKUMEN READY (INFO SELESAI) */}
+                      <button 
+                        className="eq-tool-btn green" 
+                        onClick={() => handleAdminNotify('ready')} 
+                        disabled={!selectedCompanyId || isNotifyingBulkAll}
+                      >
+                        {isNotifyingBulkAll ? <Loader2 size={13} className="eq-spinner" /> : <FileCheck size={13} />}
+                        {selectedEqIds.length > 0 ? `Notif ${selectedEqIds.length} Dokumen` : "Notif Dok Ready"}
                       </button>
                     </div>
                   )}
@@ -872,7 +906,7 @@ export default function EquipmentsPage() {
                                   </button>
                                   {userRole === "SUPERADMIN" && (
                                     <>
-                                      <button onClick={() => handleManualNotify(eq)} disabled={notifyingId === eq.id} className="action-btn notify" title="Kirim Notifikasi">
+                                      <button onClick={() => handleManualNotify(eq)} disabled={notifyingId === eq.id} className="action-btn notify" title="Kirim Notifikasi Manual">
                                         {notifyingId === eq.id ? <Loader2 size={14} className="eq-spinner" /> : <Send size={14} />}
                                       </button>
                                       <button onClick={() => { setEditingEq(eq); setIsEditModalOpen(true); }} className="action-btn" title="Edit Data">

@@ -3,108 +3,110 @@ import { prisma } from '@/lib/prisma';
 import * as jwt from 'jsonwebtoken';
 import { cookies } from 'next/headers';
 
-// Default values kalau belum ada template sama sekali
+// Pastikan DEFAULT_TEMPLATES pakai key Enum yang baru sesuai schema.prisma
 export const DEFAULT_TEMPLATES = {
-  SINGLE: {
-    senderName: 'M-Track Marusindo',
-    subject:    '[PERHATIAN] Status Alat: {{equipmentName}} - {{companyName}}',
-    introText:  'Admin PT. Marusindo mengirimkan pemberitahuan mengenai status alat berat Anda berikut:',
-    footerText: 'Harap segera lakukan tindak lanjut sesuai dengan status waktu yang tertera. Alat berstatus KEDALUWARSA berisiko secara hukum dan keselamatan kerja.',
+  EXPIRED_SINGLE: {
+    senderName: "MARIS System",
+    subject: "[PERINGATAN] Masa Berlaku Alat: {{equipmentName}} Segera Berakhir",
+    introText: "Kami menginformasikan bahwa alat {{equipmentName}} milik {{companyName}} akan segera habis masa berlakunya. Silakan ajukan inspeksi ulang melalui link di bawah ini.",
+    footerText: "Abaikan email ini jika Anda sudah melakukan proses perpanjangan. Segera urus sebelum operasional terhambat."
   },
-  BULK: {
-    senderName: 'M-Track Marusindo',
-    subject:    '[PEMBERITAHUAN] Rekap Status Peralatan - {{companyName}}',
-    introText:  'Berikut adalah pembaruan status peralatan Anda yang perlu mendapat perhatian:',
-    footerText: 'Alat berstatus KEDALUWARSA berisiko secara hukum dan keselamatan kerja jika dioperasikan sebelum inspeksi ulang dilakukan. Segera hubungi tim PT. Marusindo untuk proses perpanjangan.',
+  EXPIRED_BULK: {
+    senderName: "MARIS System",
+    subject: "[ALERT] Daftar Alat {{companyName}} yang Kedaluwarsa",
+    introText: "Ditemukan beberapa alat berat milik {{companyName}} yang masa berlakunya hampir habis atau sudah kedaluwarsa. Berikut rinciannya:",
+    footerText: "Silakan klik link masing-masing alat untuk mengajukan permohonan inspeksi ulang secara online."
   },
+  READY_SINGLE: {
+    senderName: "Admin Marusindo",
+    subject: "[DOKUMEN SIAP] Suket & Laporan Alat: {{equipmentName}}",
+    introText: "Kabar baik! Dokumen Suket dan Laporan untuk alat {{equipmentName}} sudah selesai diproses dan siap diunduh.",
+    footerText: "Klik link di bawah untuk melihat dokumen dan mengunduhnya langsung dari dashboard MARIS."
+  },
+  READY_BULK: {
+    senderName: "Admin Marusindo",
+    subject: "[UPDATE] Dokumen Alat {{companyName}} Sudah Tersedia",
+    introText: "Proses administrasi untuk beberapa alat Anda telah selesai. Anda sekarang dapat mengakses Suket dan Laporan terbaru.",
+    footerText: "Terima kasih telah menggunakan jasa PT Marusindo Berkah Jaya."
+  }
 };
 
-// GET: Ambil semua template global (companyId = null)
-export async function GET() {
+export async function GET(request: Request) {
   try {
-    const cookieStore = await cookies();
-    const token = cookieStore.get('mtrack_session')?.value;
-    if (!token) return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
+    const { searchParams } = new URL(request.url);
+    const type = searchParams.get('type');
 
-    const secret  = process.env.JWT_SECRET;
-    const decoded = jwt.verify(token, secret!) as { role: string };
-
-    if (decoded.role !== 'SUPERADMIN') {
-      return NextResponse.json({ message: 'Akses ditolak.' }, { status: 403 });
-    }
-
-    // Ambil template global yang sudah disimpan
-    const templates = await prisma.emailTemplate.findMany({
-      where: { companyId: null },
+    // Ambil semua template global (companyId is null)
+    const templates = await prisma.emailTemplate.findMany({ 
+      where: { companyId: null } 
     });
 
-    // Merge dengan default — kalau belum ada di DB, pakai default
-    const single = templates.find((t) => t.type === 'SINGLE');
-    const bulk   = templates.find((t) => t.type === 'BULK');
+    if (type) {
+      const tpl = templates.find(t => t.type === type);
+      // Fallback ke DEFAULT_TEMPLATES kalau belum ada di DB
+      return NextResponse.json(tpl ?? { ...DEFAULT_TEMPLATES[type as keyof typeof DEFAULT_TEMPLATES], type });
+    }
 
-    return NextResponse.json({
-      SINGLE: single ?? { ...DEFAULT_TEMPLATES.SINGLE, id: null, companyId: null, type: 'SINGLE' },
-      BULK:   bulk   ?? { ...DEFAULT_TEMPLATES.BULK,   id: null, companyId: null, type: 'BULK'   },
-    }, { status: 200 });
-
+    return NextResponse.json(templates);
   } catch (error) {
-    console.error('[GET GLOBAL TEMPLATES ERROR]:', error);
+    console.error("[GET TEMPLATE ERROR]:", error);
     return NextResponse.json({ message: 'Gagal memuat template.' }, { status: 500 });
   }
 }
 
-// POST: Simpan/update template global (upsert)
 export async function POST(request: Request) {
   try {
-    const cookieStore = await cookies();
-    const token = cookieStore.get('mtrack_session')?.value;
-    if (!token) return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
-
-    const secret  = process.env.JWT_SECRET;
-    const decoded = jwt.verify(token, secret!) as { role: string };
-
-    if (decoded.role !== 'SUPERADMIN') {
-      return NextResponse.json({ message: 'Akses ditolak.' }, { status: 403 });
-    }
-
     const body = await request.json();
     const { type, senderName, subject, introText, footerText } = body;
 
-    if (!type || !['SINGLE', 'BULK'].includes(type)) {
-      return NextResponse.json({ message: 'Type harus SINGLE atau BULK.' }, { status: 400 });
-    }
-    if (!subject?.trim() || !introText?.trim() || !footerText?.trim()) {
-      return NextResponse.json({ message: 'Subject, intro, dan footer wajib diisi.' }, { status: 400 });
+    // VALIDASI: Pastikan type yang dikirim sesuai Enum baru
+    const validTypes = ['EXPIRED_SINGLE', 'EXPIRED_BULK', 'READY_SINGLE', 'READY_BULK'];
+    if (!validTypes.includes(type)) {
+      return NextResponse.json({ message: 'Tipe template tidak valid.' }, { status: 400 });
     }
 
-    // Upsert — kalau sudah ada update, kalau belum create
-    const template = await prisma.emailTemplate.upsert({
+    // LOGIC GANTI UPSERT: Cari dulu secara manual
+    const existingTemplate = await prisma.emailTemplate.findFirst({
       where: {
-        companyId_type: { companyId: null as any, type },
-      },
-      update: {
-        senderName: senderName?.trim() || 'M-Track Marusindo',
-        subject:    subject.trim(),
-        introText:  introText.trim(),
-        footerText: footerText.trim(),
-      },
-      create: {
-        companyId:  null,
-        type,
-        senderName: senderName?.trim() || 'M-Track Marusindo',
-        subject:    subject.trim(),
-        introText:  introText.trim(),
-        footerText: footerText.trim(),
-      },
+        companyId: null, // Global template
+        type: type
+      }
     });
 
-    return NextResponse.json(
-      { message: 'Template global berhasil disimpan.', template },
-      { status: 200 }
-    );
+    let template;
 
-  } catch (error) {
-    console.error('[POST GLOBAL TEMPLATE ERROR]:', error);
-    return NextResponse.json({ message: 'Gagal menyimpan template.' }, { status: 500 });
+    if (existingTemplate) {
+      // Jika ada, lakukan UPDATE pakai ID
+      template = await prisma.emailTemplate.update({
+        where: { id: existingTemplate.id },
+        data: {
+          senderName: senderName || "M-Track Marusindo",
+          subject: subject.trim(),
+          introText: introText.trim(),
+          footerText: footerText.trim(),
+        }
+      });
+    } else {
+      // Jika tidak ada, lakukan CREATE
+      template = await prisma.emailTemplate.create({
+        data: {
+          companyId: null, // Set null untuk Global
+          type: type,
+          senderName: senderName || "M-Track Marusindo",
+          subject: subject.trim(),
+          introText: introText.trim(),
+          footerText: footerText.trim(),
+        }
+      });
+    }
+
+    return NextResponse.json({ message: 'Template global berhasil disimpan.', template });
+  } catch (error: any) {
+    // Log error asli ke terminal biar lu bisa liat masalahnya
+    console.error("[POST TEMPLATE ERROR]:", error);
+    return NextResponse.json({ 
+      message: 'Gagal menyimpan template.', 
+      error: error.message 
+    }, { status: 500 });
   }
 }
