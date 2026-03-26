@@ -21,9 +21,9 @@ interface Equipment {
   id: string; name: string; permitNumber: string; serialNumber: string;
   location: string | null; inspectionDate: string; expiryDate: string;
   companyId?: string;
-  area?:        string | null;
-  brand?:       string | null;
-  capacity?:    string | null;
+  area?:         string | null;
+  brand?:        string | null;
+  capacity?:     string | null;
   description?: string | null;
   isProsesDinas?: boolean; // TAMBAHAN DATABASE BARU LU
   suket?:       Suket[];
@@ -110,6 +110,9 @@ export default function EquipmentsPage() {
   const [selectedEqIds, setSelectedEqIds]           = useState<string[]>([]);
   const [deletingId, setDeletingId]                 = useState<string | null>(null);
 
+  // Client Request State
+  const [isSubmittingRequest, setIsSubmittingRequest] = useState(false);
+
   // ── Init ──
   useEffect(() => {
     const stored = localStorage.getItem("userProfile");
@@ -158,6 +161,49 @@ export default function EquipmentsPage() {
     }
   };
 
+  // ── Client Request Handler ──
+  const handleClientRequest = async (type: 'inspeksi' | 'dokumen') => {
+    if (selectedEqIds.length === 0) {
+      setStatusMsg({ type: "error", text: "Pilih setidaknya satu alat terlebih dahulu." });
+      return;
+    }
+
+    const label = type === 'inspeksi' ? 'permohonan inspeksi ulang' : 'permintaan dokumen (Suket/Laporan)';
+    const ok = await confirm({
+      variant: "info",
+      title: "Kirim Permohonan",
+      description: `Kirim ${label} untuk ${selectedEqIds.length} alat yang dipilih ke Admin Marusindo?`,
+      confirmLabel: "Ya, Kirim",
+      cancelLabel: "Batal",
+    });
+
+    if (!ok) return;
+
+    setIsSubmittingRequest(true);
+    setStatusMsg(null);
+
+    try {
+      const res = await fetch("/api/equipments/client-request", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          equipmentIds: selectedEqIds,
+          requestType: type
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || "Gagal mengirim permohonan.");
+
+      setStatusMsg({ type: "success", text: data.message });
+      setSelectedEqIds([]); // Reset seleksi setelah berhasil
+    } catch (err: any) {
+      setStatusMsg({ type: "error", text: err.message });
+    } finally {
+      setIsSubmittingRequest(false);
+    }
+  };
+
   // ── Import Excel ──
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -171,8 +217,8 @@ export default function EquipmentsPage() {
         const ws       = workbook.Sheets[workbook.SheetNames[0]];
         const json: any[] = XLSX.utils.sheet_to_json(ws);
         const mapped = json.map((row) => ({
-          name:           row["ALAT"]        || row["Nama Alat"]  || null,
-          location:       row["LOKASI"]      || row["Lokasi"]     || null,
+          name:           row["ALAT"]         || row["Nama Alat"]  || null,
+          location:       row["LOKASI"]       || row["Lokasi"]     || null,
           permitNumber:   row["NOMOR IZIN"]  || row["Nomor Izin"] || null,
           serialNumber:   row["NOMOR SERIE"] || row["NOMOR SERI"] || null,
           inspectionDate: parseExcelDate(row["TANGGAL PEMERIKSAAN"] || row["Tanggal Pemeriksaan"]),
@@ -490,8 +536,8 @@ export default function EquipmentsPage() {
         .eq-search-icon  { position:absolute; left:11px; top:50%; transform:translateY(-50%); color:#CCCCCC; pointer-events:none; }
         .eq-search-input { width:100%; padding:9px 14px 9px 34px; background:#FFFFFF; border:1.5px solid #E5E2D8; border-radius:8px; font-family:inherit; font-size:13px; color:#1A1A1A; outline:none; transition:0.2s; caret-color:#F0A500; }
         .eq-search-input::placeholder { color:#CCCCCC; }
-        .eq-search-input:focus        { border-color:rgba(240,165,0,0.35); box-shadow:0 0 0 3px rgba(240,165,0,0.08); }
-        .eq-search-input:disabled     { opacity:0.4; cursor:not-allowed; }
+        .eq-search-input:focus         { border-color:rgba(240,165,0,0.35); box-shadow:0 0 0 3px rgba(240,165,0,0.08); }
+        .eq-search-input:disabled      { opacity:0.4; cursor:not-allowed; }
 
         .eq-tool-btn             { display:flex; align-items:center; gap:7px; padding:8px 14px; background:#FFFFFF; border:1.5px solid #E5E2D8; border-radius:8px; font-family:inherit; font-size:12px; font-weight:500; color:#888880; cursor:pointer; white-space:nowrap; transition:0.2s; }
         .eq-tool-btn:hover:not(:disabled)       { background:#F5F3EE; border-color:#C8C0B0; color:#555550; }
@@ -528,7 +574,7 @@ export default function EquipmentsPage() {
         .eq-expiry    { font-size:12px; color:#555550; font-family:monospace; }
 
         /* BADGES */
-        .eq-badge         { display:inline-flex; align-items:center; gap:5px; padding:3px 9px; border-radius:999px; font-size:10px; font-weight:500; text-transform:uppercase; letter-spacing:0.06em; white-space:nowrap; }
+        .eq-badge          { display:inline-flex; align-items:center; gap:5px; padding:3px 9px; border-radius:999px; font-size:10px; font-weight:500; text-transform:uppercase; letter-spacing:0.06em; white-space:nowrap; }
         .eq-badge.safe    { background:rgba(34,160,100,0.07);  border:1px solid rgba(34,160,100,0.18);  color:#22A064; }
         .eq-badge.warning { background:rgba(240,165,0,0.08);   border:1px solid rgba(240,165,0,0.2);    color:#C87A00; }
         .eq-badge.danger  { background:rgba(220,60,60,0.07);   border:1px solid rgba(220,60,60,0.18);   color:#DC3C3C; }
@@ -560,7 +606,7 @@ export default function EquipmentsPage() {
 
         .modal-overlay  { position:fixed; inset:0; background:rgba(0,0,0,0.25); backdrop-filter:blur(6px); display:flex; align-items:center; justify-content:center; z-index:100; padding:20px; overflow-y:auto; }
         .modal-content  { background:#FFFFFF; border:1.5px solid #EAE7DF; border-radius:16px; width:100%; max-width:560px; padding:24px; box-shadow:0 20px 50px rgba(0,0,0,0.1); animation:eq-fadeup 0.2s ease-out; margin:auto; max-height:90vh; overflow-y:auto; }
-        .modal-title    { font-size:16px; font-weight:700; color:#1A1A1A; margin-bottom:4px; }
+        .modal-title     { font-size:16px; font-weight:700; color:#1A1A1A; margin-bottom:4px; }
         .modal-subtitle { font-size:12px; color:#AAAAAA; margin-bottom:20px; }
         .modal-label    { display:block; font-size:11px; font-weight:600; color:#555550; text-transform:uppercase; letter-spacing:0.08em; margin-bottom:6px; }
         .modal-btn-cancel { flex:1; padding:11px; background:#F5F3EE; border:1.5px solid #E5E2D8; border-radius:10px; font-family:inherit; font-size:13px; font-weight:500; color:#888880; cursor:pointer; transition:0.15s; }
@@ -596,7 +642,7 @@ export default function EquipmentsPage() {
               <div className="eq-left">
                 <div className="eq-card">
                   <div className="eq-card-header" style={{ flexDirection: "column", alignItems: "stretch", gap: 10 }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <div style={{ display: "flex", align_items: "center", gap: 8 }}>
                       <span className="eq-card-header-icon"><Building2 size={14} /></span>
                       <span className="eq-card-title">Pilih Klien</span>
                     </div>
@@ -662,6 +708,8 @@ export default function EquipmentsPage() {
                   </div>
                   {selectedCompany && <span className="eq-selected-tag">{selectedCompany.name}</span>}
                   <input type="file" ref={fileInputRef} accept=".xlsx,.xls,.csv" onChange={handleFileUpload} style={{ display: "none" }} />
+                  
+                  {/* BUTTONS UNTUK ADMIN */}
                   {userRole === "SUPERADMIN" && (
                     <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
                       <button className="eq-tool-btn amber" onClick={() => setIsAddModalOpen(true)} disabled={!selectedCompanyId}>
@@ -673,6 +721,28 @@ export default function EquipmentsPage() {
                       <button className="eq-tool-btn red" onClick={handleNotifyBulk} disabled={!selectedCompanyId || isNotifyingBulkAll}>
                         {isNotifyingBulkAll ? <Loader2 size={13} className="eq-spinner" /> : <MailWarning size={13} />}
                         {selectedEqIds.length > 0 ? `Kirim ${selectedEqIds.length} Pilihan` : "Alert Expired"}
+                      </button>
+                    </div>
+                  )}
+
+                  {/* BUTTONS UNTUK KLIEN (USER BIASA) */}
+                  {userRole !== "SUPERADMIN" && (
+                    <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
+                      <button 
+                        className="eq-tool-btn amber" 
+                        onClick={() => handleClientRequest('inspeksi')} 
+                        disabled={selectedEqIds.length === 0 || isSubmittingRequest}
+                      >
+                        {isSubmittingRequest ? <Loader2 size={13} className="eq-spinner" /> : <Send size={13} />} 
+                        Request Inspeksi
+                      </button>
+                      <button 
+                        className="eq-tool-btn amber" 
+                        onClick={() => handleClientRequest('dokumen')} 
+                        disabled={selectedEqIds.length === 0 || isSubmittingRequest}
+                      >
+                        {isSubmittingRequest ? <Loader2 size={13} className="eq-spinner" /> : <FileUp size={13} />} 
+                        Request Dokumen
                       </button>
                     </div>
                   )}
