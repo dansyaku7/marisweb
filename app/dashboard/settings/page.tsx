@@ -49,13 +49,13 @@ export default function SettingsPage() {
           <div style={{
             width: 56, height: 56, borderRadius: 14,
             background: "rgba(220,60,60,0.07)", border: "1.5px solid rgba(220,60,60,0.18)",
-            display: "flex", alignItems: "center", justifyContent: "center",
+            display: "flex", alignItems: "center", justify_content: "center",
             margin: "0 auto 16px", color: "#DC3C3C",
           }}>
             <AlertTriangle size={24} />
           </div>
           <p style={{ fontSize: 15, fontWeight: 600, color: "#1A1A1A", margin: "0 0 6px" }}>Akses Ditolak</p>
-          <p style={{ fontSize: 13, color: "#AAAAAA", margin: 0 }}>Halaman ini hanya untuk Administrator.</p>
+          <p style={{ fontSize: 13, color: "#1A1A1A", margin: 0 }}>Halaman ini hanya untuk Administrator.</p>
         </div>
       </div>
     );
@@ -76,18 +76,18 @@ export default function SettingsPage() {
         .st-eyebrow    { font-size:10px; font-weight:500; color:#C87A00; text-transform:uppercase; letter-spacing:0.14em; margin-bottom:8px; }
         .st-page-title { font-size:clamp(20px,3.5vw,26px); font-weight:700; color:#1A1A1A; margin:0 0 6px; line-height:1.15; display:flex; align-items:center; gap:12px; }
         .st-title-icon { width:36px; height:36px; background:rgba(240,165,0,0.08); border:1.5px solid rgba(240,165,0,0.18); border-radius:10px; display:flex; align-items:center; justify-content:center; color:#C87A00; flex-shrink:0; }
-        .st-page-desc  { font-size:13px; color:#AAAAAA; margin:0; }
+        .st-page-desc  { font-size:13px; color:#1A1A1A; margin:0; } /* UBAH KE ITEM */
         .st-divider    { height:1px; background:linear-gradient(90deg,#F0A500 0%,transparent 60%); margin:24px 0 28px; opacity:0.2; }
 
         .st-section       { background:#FFFFFF; border:1.5px solid #E8E4DC; border-radius:14px; overflow:hidden; box-shadow:0 2px 12px rgba(0,0,0,0.05); margin-bottom:24px; }
         .st-section-header{ padding:16px 20px; background:#FAFAF7; border-bottom:1px solid #F0EDE4; display:flex; align-items:center; gap:10px; }
         .st-section-icon  { width:30px; height:30px; background:rgba(240,165,0,0.08); border:1.5px solid rgba(240,165,0,0.18); border-radius:8px; display:flex; align-items:center; justify-content:center; color:#C87A00; flex-shrink:0; }
-        .st-section-title { font-size:13px; font-weight:600; color:#555550; }
-        .st-section-desc  { font-size:11px; color:#AAAAAA; margin-top:1px; }
+        .st-section-title { font-size:13px; font-weight:600; color:#1A1A1A; } /* UBAH KE ITEM */
+        .st-section-desc  { font-size:11px; color:#1A1A1A; margin-top:1px; } /* UBAH KE ITEM */
         .st-section-body  { padding:20px; }
 
         .st-tab-bar  { display:flex; gap:6px; background:#F5F3EE; padding:5px; border-radius:10px; border:1.5px solid #EAE7DF; margin-bottom:20px; }
-        .st-tab-btn  { flex:1; padding:10px; font-size:12px; font-weight:500; border-radius:7px; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:6px; transition:0.2s; border:none; background:transparent; color:#AAAAAA; font-family:inherit; }
+        .st-tab-btn  { flex:1; padding:10px; font-size:12px; font-weight:500; border-radius:7px; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:6px; transition:0.2s; border:none; background:transparent; color:#1A1A1A; font-family:inherit; } /* UBAH KE ITEM */
         .st-tab-btn.active { background:#FFFFFF; color:#C87A00; border:1.5px solid rgba(240,165,0,0.25); box-shadow:0 1px 4px rgba(0,0,0,0.06); }
         
         .st-grid-editors { display: grid; grid-template-columns: 1fr; gap: 24px; }
@@ -107,7 +107,7 @@ export default function SettingsPage() {
           <div className="st-divider" />
 
           {isLoading ? (
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: 300, gap: 10, color: "#AAAAAA" }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: 300, gap: 10, color: "#1A1A1A" }}> {/* UBAH KE ITEM */}
               <Loader2 size={20} style={{ animation: "st-spin 1s linear infinite", color: "#F0A500" }} />
               <span style={{ fontSize: 13 }}>Memuat data...</span>
             </div>
@@ -171,7 +171,7 @@ export default function SettingsPage() {
                   <p className="st-section-title">Variabel Magic Link</p>
                 </div>
                 <div className="st-section-body">
-                   <p style={{ fontSize: 12, color: "#888", marginBottom: 12 }}>
+                   <p style={{ fontSize: 12, color: "#1A1A1A", marginBottom: 12 }}> {/* UBAH KE ITEM */}
                      Gunakan variabel di bawah ini di dalam template agar link otomatis ter-generate:
                    </p>
                    <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
