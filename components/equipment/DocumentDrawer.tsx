@@ -152,6 +152,7 @@ export default function DocumentDrawer({
 }: DocumentDrawerProps) {
   const [previewUrl, setPreviewUrl]               = useState<string | null>(null);
   const [isSubmittingSuket, setIsSubmittingSuket] = useState(false);
+  const [isDeletingSuketId, setIsDeletingSuketId] = useState<string | null>(null);
   const [isSubmittingLaporan, setIsSubmittingLaporan] = useState(false);
   const [successMsg, setSuccessMsg]               = useState<string | null>(null);
 
@@ -163,10 +164,10 @@ export default function DocumentDrawer({
   }, [successMsg]);
 
   const handleOverlayClick = (e: React.MouseEvent) => {
-    if (e.target === e.currentTarget && !isSubmittingSuket && !isSubmittingLaporan) onClose();
+    if (e.target === e.currentTarget && !isSubmittingSuket && !isSubmittingLaporan && !isDeletingSuketId) onClose();
   };
 
-  // ── Upload suket baru (append ke history) ──
+  // ── Upload suket baru ──
   const handleUploadSuket = async (data: {
     mode: "link" | "upload"; url?: string; file?: File; period?: string;
   }) => {
@@ -202,7 +203,30 @@ export default function DocumentDrawer({
     }
   };
 
-  // ── Upload / replace laporan (backend upsert by period) ──
+  // ── Hapus suket ──
+  const handleDeleteSuket = async (suketId: string) => {
+    if (!equipment) return;
+    const isConfirmed = window.confirm("Yakin ingin menghapus dokumen suket ini secara permanen?");
+    if (!isConfirmed) return;
+
+    setIsDeletingSuketId(suketId);
+    try {
+      const res = await fetch(`/api/equipments/${equipment.id}/suket?suketId=${suketId}`, {
+        method: "DELETE",
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.message || "Gagal menghapus suket.");
+
+      setSuccessMsg("Suket berhasil dihapus permanen.");
+      onDocumentSaved?.();
+    } catch (err: any) {
+      alert(err.message);
+    } finally {
+      setIsDeletingSuketId(null);
+    }
+  };
+
+  // ── Upload laporan ──
   const handleUploadLaporan = async (data: {
     mode: "link" | "upload"; url?: string; file?: File; period?: string;
   }) => {
@@ -362,8 +386,10 @@ export default function DocumentDrawer({
             suketList={suketList}
             userRole={userRole}
             isSubmitting={isSubmittingSuket}
+            isDeletingId={isDeletingSuketId}
             onUpload={handleUploadSuket}
             onPreview={setPreviewUrl}
+            onDelete={handleDeleteSuket}
           />
 
           <div style={{

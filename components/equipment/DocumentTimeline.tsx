@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 import {
   CheckCircle2, Clock, Download, Eye, Shield,
-  ChevronDown, ChevronUp, Plus
+  ChevronDown, ChevronUp, Plus, Trash2, Loader2
 } from "lucide-react";
 import UploadForm from "./UploadForm";
 
@@ -18,16 +18,20 @@ interface DocumentTimelineProps {
   suketList: Suket[];
   userRole: string | null;
   isSubmitting: boolean;
+  isDeletingId?: string | null;
   onUpload: (data: { mode: "link" | "upload"; url?: string; file?: File; period?: string }) => void;
   onPreview: (url: string) => void;
+  onDelete?: (id: string) => void;
 }
 
 export default function DocumentTimeline({
   suketList,
   userRole,
   isSubmitting,
+  isDeletingId,
   onUpload,
   onPreview,
+  onDelete,
 }: DocumentTimelineProps) {
   const [showAll, setShowAll] = useState(false);
   const [showUploadForm, setShowUploadForm] = useState(false);
@@ -121,13 +125,24 @@ export default function DocumentTimeline({
               <TimelineItem
                 suket={active}
                 isActive
+                userRole={userRole}
+                isDeleting={isDeletingId === active.id}
                 onPreview={onPreview}
+                onDelete={onDelete}
               />
             )}
 
             {/* ── HISTORY ── */}
             {visibleHistory.map((s) => (
-              <TimelineItem key={s.id} suket={s} isActive={false} onPreview={onPreview} />
+              <TimelineItem 
+                key={s.id} 
+                suket={s} 
+                isActive={false} 
+                userRole={userRole}
+                isDeleting={isDeletingId === s.id}
+                onPreview={onPreview} 
+                onDelete={onDelete}
+              />
             ))}
 
             {/* Show more / less */}
@@ -157,14 +172,20 @@ export default function DocumentTimeline({
 function TimelineItem({
   suket,
   isActive,
+  userRole,
+  isDeleting,
   onPreview,
+  onDelete,
 }: {
   suket: Suket;
   isActive: boolean;
+  userRole: string | null;
+  isDeleting?: boolean;
   onPreview: (url: string) => void;
+  onDelete?: (id: string) => void;
 }) {
   return (
-    <div style={{ display: "flex", gap: 12, paddingBottom: 12, position: "relative" }}>
+    <div style={{ display: "flex", gap: 12, paddingBottom: 12, position: "relative", opacity: isDeleting ? 0.6 : 1, transition: "opacity 0.2s" }}>
 
       {/* Dot timeline */}
       <div style={{
@@ -216,6 +237,35 @@ function TimelineItem({
         <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
           <ActionBtn onClick={() => onPreview(suket.fileUrl)} icon={<Eye size={12} />} label="Preview" />
           <ActionBtn href={suket.fileUrl} icon={<Download size={12} />} label="Unduh" />
+          
+          {/* Tombol Hapus (Superadmin) */}
+          {userRole === "SUPERADMIN" && onDelete && (
+            <button
+              onClick={() => onDelete(suket.id)}
+              disabled={isDeleting}
+              style={{
+                padding: "6px 8px", borderRadius: 7,
+                background: "rgba(220,60,60,0.05)", border: "1.5px solid rgba(220,60,60,0.12)",
+                color: "#DC3C3C", cursor: isDeleting ? "not-allowed" : "pointer",
+                display: "flex", alignItems: "center", transition: "0.15s",
+              }}
+              onMouseEnter={(e) => {
+                if (!isDeleting) {
+                  (e.currentTarget as HTMLElement).style.background = "rgba(220,60,60,0.1)";
+                  (e.currentTarget as HTMLElement).style.borderColor = "rgba(220,60,60,0.3)";
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (!isDeleting) {
+                  (e.currentTarget as HTMLElement).style.background = "rgba(220,60,60,0.05)";
+                  (e.currentTarget as HTMLElement).style.borderColor = "rgba(220,60,60,0.12)";
+                }
+              }}
+              title="Hapus Dokumen"
+            >
+              {isDeleting ? <Loader2 size={13} style={{ animation: "spin 1s linear infinite" }} /> : <Trash2 size={13} />}
+            </button>
+          )}
         </div>
       </div>
     </div>
@@ -254,7 +304,7 @@ function ActionBtn({
           (e.currentTarget as HTMLElement).style.borderColor = "#E5E2D8";
         }}
       >
-        {icon} {label}
+        {icon} <span style={{ display: "none" }} className="sm-label">{label}</span>
       </a>
     );
   }
@@ -272,7 +322,7 @@ function ActionBtn({
         (e.currentTarget as HTMLElement).style.borderColor = "#E5E2D8";
       }}
     >
-      {icon} {label}
+      {icon} <span style={{ display: "none" }} className="sm-label">{label}</span>
     </button>
   );
 }

@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import * as jwt from 'jsonwebtoken';
 import { cookies } from 'next/headers';
+import { del } from '@vercel/blob';
 
 // POST: Tambah suket baru (append ke history, yang lama tetap ada)
 export async function POST(
@@ -86,5 +87,65 @@ export async function GET(
   } catch (error) {
     console.error('[GET SUKET ERROR]:', error);
     return NextResponse.json({ message: 'Terjadi kesalahan sistem' }, { status: 500 });
+  }
+}
+
+// DELETE: Hapus suket dari database dan Vercel Blob
+export async function DELETE(
+  request: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const cookieStore = await cookies();
+    const token = cookieStore.get('mtrack_session')?.value;
+    if (!token) return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
+
+    const secret = process.env.JWT_SECRET;
+    const decoded = jwt.verify(token, secret!) as { companyId: string; role: string };
+
+    if (decoded.role !== 'SUPERADMIN') {
+      return NextResponse.json(
+        { message: 'Akses ditolak. Hanya Administrator yang dapat menghapus dokumen.' },
+        { status: 403 }
+      );
+    }
+
+    const { searchParams } = new URL(request.url);
+    const suketId = searchParams.get('suketId');
+
+    if (!suketId) {
+      return NextResponse.json({ message: 'ID suket tidak ditemukan.' }, { status: 400 });
+    }
+
+    // 1. Cari data suket untuk dapet URL Vercel Blob
+    const existingSuket = await prisma.suket.findUnique({
+      where: { id: suketId }
+    });
+
+    if (!existingSuket) {
+      return NextResponse.json({ message: 'Data suket tidak ditemukan.' }, { status: 404 });
+    }
+
+    // 2. Hapus file fisik dari Vercel Blob jika URL valid
+    if (existingSuket.fileUrl && existingSuket.fileUrl.includes('blob.vercel-storage.com')) {
+      try {
+        await del(existingSuket.fileUrl);
+        console.log(`[VERCEL BLOB]: File deleted -> ${existingSuket.fileUrl}`);
+      } catch (blobError: any) {
+        console.warn(`[VERCEL BLOB WARNING]: Gagal hapus file ${existingSuket.fileUrl} - ${blobError.message}`);
+        // Lanjut hapus database meskipun blob gagal (misal file udah kehapus manual)
+      }
+    }
+
+    // 3. Hapus data dari database
+    await prisma.suket.delete({
+      where: { id: suketId },
+    });
+
+    return NextResponse.json({ message: 'Suket beserta file fisiknya berhasil dihapus' }, { status: 200 });
+
+  } catch (error) {
+    console.error('[DELETE SUKET ERROR]:', error);
+    return NextResponse.json({ message: 'Terjadi kesalahan sistem saat menghapus' }, { status: 500 });
   }
 }
