@@ -30,7 +30,7 @@ interface Equipment {
   location: string | null;
   inspectionDate: string;
   expiryDate: string;
-  isProsesDinas?: boolean; 
+  isProsesDinas?: boolean;
   suket?: Suket[];
   laporan?: Laporan[];
 }
@@ -44,7 +44,7 @@ interface DocumentDrawerProps {
 }
 
 // ============================================================
-// LOADING OVERLAY (DARI FOTO CONTOH)
+// LOADING OVERLAY — hanya nutup area drawer
 // ============================================================
 function ProcessingOverlay({ isVisible }: { isVisible: boolean }) {
   const [loadingText, setLoadingText] = useState("Menyiapkan dokumen...");
@@ -70,22 +70,23 @@ function ProcessingOverlay({ isVisible }: { isVisible: boolean }) {
 
   return (
     <div style={{
-      position: "fixed", inset: 0, zIndex: 9999,
+      position: "absolute", inset: 0, zIndex: 10,          // <-- absolute, bukan fixed
       background: "rgba(255, 255, 255, 0.95)",
       backdropFilter: "blur(5px)",
       display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
       animation: "drawerFadeIn 0.3s ease-out",
+      borderRadius: "inherit",
     }}>
       <div style={{ position: "relative", width: 120, height: 120, marginBottom: 32 }}>
         <svg style={{ position: "absolute", inset: 0, transform: "rotate(-90deg)" }} width="120" height="120">
           <circle cx="60" cy="60" r="54" fill="transparent" stroke="#E5E2D8" strokeWidth="4" />
           <circle className="loading-circle" cx="60" cy="60" r="54" fill="transparent" stroke="#F0A500" strokeWidth="4" strokeLinecap="round" strokeDasharray="339" strokeDashoffset="339" />
         </svg>
-        <div style={{ 
-          position: "absolute", inset: 15, 
-          background: "linear-gradient(135deg, #F0A500, #C87A00)", 
+        <div style={{
+          position: "absolute", inset: 15,
+          background: "linear-gradient(135deg, #F0A500, #C87A00)",
           borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center",
-          color: "#FFFFFF", boxShadow: "0 10px 20px rgba(240, 165, 0, 0.3)" 
+          color: "#FFFFFF", boxShadow: "0 10px 20px rgba(240, 165, 0, 0.3)"
         }}>
           <FileUp size={32} className="float-anim" />
         </div>
@@ -139,7 +140,7 @@ function PreviewModal({ url, onClose }: { url: string; onClose: () => void }) {
               }}>Buka di Tab Baru</a>
             <button onClick={onClose}
               style={{
-                padding: "5px 10px", borderRadius: 7, background: "#2A2A2A", 
+                padding: "5px 10px", borderRadius: 7, background: "#2A2A2A",
                 border: "1px solid #3A3A3A", color: "#1A1A1A", cursor: "pointer", display: "flex", alignItems: "center",
               }}><X size={14} /></button>
           </div>
@@ -183,6 +184,7 @@ export default function DocumentDrawer({
   const [isSubmittingSuket, setIsSubmittingSuket] = useState(false);
   const [isDeletingSuketId, setIsDeletingSuketId] = useState<string | null>(null);
   const [isSubmittingLaporan, setIsSubmittingLaporan] = useState(false);
+  const [isDeletingLaporanId, setIsDeletingLaporanId] = useState<string | null>(null);
   const [successMsg, setSuccessMsg]               = useState<string | null>(null);
   const [isTogglingDinas, setIsTogglingDinas]     = useState(false);
 
@@ -192,8 +194,10 @@ export default function DocumentDrawer({
     return () => clearTimeout(t);
   }, [successMsg]);
 
+  const isProcessing = isSubmittingSuket || isSubmittingLaporan;
+
   const handleOverlayClick = (e: React.MouseEvent) => {
-    if (e.target === e.currentTarget && !isSubmittingSuket && !isSubmittingLaporan && !isDeletingSuketId) onClose();
+    if (e.target === e.currentTarget && !isProcessing && !isDeletingSuketId && !isDeletingLaporanId) onClose();
   };
 
   const handleUploadSuket = async (data: { mode: "link" | "upload"; url?: string; file?: File; period?: string; }) => {
@@ -256,7 +260,17 @@ export default function DocumentDrawer({
     } catch (err: any) { alert(err.message); } finally { setIsSubmittingLaporan(false); }
   };
 
-  const handleToggleProsesDinas = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleDeleteLaporan = async (laporanId: string) => {
+    if (!equipment) return;
+    if (!window.confirm("Yakin ingin menghapus laporan ini?")) return;
+    setIsDeletingLaporanId(laporanId);
+    try {
+      const res = await fetch(`/api/equipments/${equipment.id}/laporan?laporanId=${laporanId}`, { method: "DELETE" });
+      if (!res.ok) throw new Error("Gagal menghapus laporan.");
+      setSuccessMsg("Laporan berhasil dihapus.");
+      onDocumentSaved?.();
+    } catch (err: any) { alert(err.message); } finally { setIsDeletingLaporanId(null); }
+  }; = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!equipment) return;
     const newVal = e.target.checked;
     setIsTogglingDinas(true);
@@ -266,7 +280,7 @@ export default function DocumentDrawer({
         body: JSON.stringify({ isProsesDinas: newVal })
       });
       if (!res.ok) throw new Error("Gagal update status proses dinas");
-      setSuccessMsg(`Proses Dinas ${newVal ? 'Aktif' : 'Nonaktif'}.`);
+      setSuccessMsg(`Proses Dinas ${newVal ? "Aktif" : "Nonaktif"}.`);
       onDocumentSaved?.();
     } catch (error: any) { alert(error.message); } finally { setIsTogglingDinas(false); }
   };
@@ -278,23 +292,56 @@ export default function DocumentDrawer({
 
   return (
     <>
-      <ProcessingOverlay isVisible={isSubmittingSuket || isSubmittingLaporan} />
-      
-      <div onClick={handleOverlayClick} style={{ position: "fixed", inset: 0, zIndex: 200, background: "rgba(0,0,0,0.2)", backdropFilter: "blur(4px)", animation: "drawerFadeIn 0.2s ease" }} />
+      {/* Backdrop — tetap full screen */}
+      <div
+        onClick={handleOverlayClick}
+        style={{
+          position: "fixed", inset: 0, zIndex: 200,
+          background: "rgba(0,0,0,0.2)", backdropFilter: "blur(4px)",
+          animation: "drawerFadeIn 0.2s ease",
+        }}
+      />
 
-      <div style={{ position: "fixed", top: 0, right: 0, bottom: 0, zIndex: 201, width: "100%", maxWidth: 480, background: "#FFFFFF", borderLeft: "1.5px solid #EAE7DF", display: "flex", flexDirection: "column", boxShadow: "-8px 0 40px rgba(0,0,0,0.1)", animation: "drawerSlideIn 0.25s cubic-bezier(0.32,0.72,0,1)" }}>
+      {/* Drawer — position: relative supaya overlay absolute terkurung di sini */}
+      <div style={{
+        position: "fixed", top: 0, right: 0, bottom: 0, zIndex: 201,
+        width: "100%", maxWidth: 480,
+        background: "#FFFFFF", borderLeft: "1.5px solid #EAE7DF",
+        display: "flex", flexDirection: "column",
+        boxShadow: "-8px 0 40px rgba(0,0,0,0.1)",
+        animation: "drawerSlideIn 0.25s cubic-bezier(0.32,0.72,0,1)",
+        // ↓ Dua baris ini yang bikin overlay terkurung di dalam drawer
+        position: "fixed" as any,
+        overflow: "hidden",
+      }}>
+
+        {/* Loading overlay — sekarang absolute, cuma nutup area drawer */}
+        <ProcessingOverlay isVisible={isProcessing} />
 
         {/* Header */}
         <div style={{ padding: "20px 24px 16px", borderBottom: "1px solid #F0EDE4", background: "#FAFAF7", flexShrink: 0 }}>
           <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-              <div style={{ width: 38, height: 38, borderRadius: 10, flexShrink: 0, background: hasDocs ? "rgba(34,160,100,0.08)" : "rgba(240,165,0,0.08)", border: `1.5px solid ${hasDocs ? "rgba(34,160,100,0.2)" : "rgba(240,165,0,0.2)"}`, display: "flex", alignItems: "center", justifyContent: "center", color: hasDocs ? "#22A064" : "#C87A00" }}><FolderOpen size={18} /></div>
+              <div style={{
+                width: 38, height: 38, borderRadius: 10, flexShrink: 0,
+                background: hasDocs ? "rgba(34,160,100,0.08)" : "rgba(240,165,0,0.08)",
+                border: `1.5px solid ${hasDocs ? "rgba(34,160,100,0.2)" : "rgba(240,165,0,0.2)"}`,
+                display: "flex", alignItems: "center", justifyContent: "center",
+                color: hasDocs ? "#22A064" : "#C87A00",
+              }}><FolderOpen size={18} /></div>
               <div>
                 <p style={{ fontSize: 15, fontWeight: 700, color: "#1A1A1A", margin: 0 }}>Kelola Dokumen</p>
                 <p style={{ fontSize: 11, color: "#1A1A1A", margin: "3px 0 0", fontFamily: "monospace" }}>{equipment.permitNumber}</p>
               </div>
             </div>
-            <button onClick={onClose} style={{ padding: 8, borderRadius: 8, flexShrink: 0, background: "#F5F3EE", border: "1.5px solid #E5E2D8", color: "#1A1A1A", cursor: "pointer", display: "flex", alignItems: "center", transition: "0.15s" }}><X size={16} /></button>
+            <button
+              onClick={onClose}
+              style={{
+                padding: 8, borderRadius: 8, flexShrink: 0,
+                background: "#F5F3EE", border: "1.5px solid #E5E2D8",
+                color: "#1A1A1A", cursor: "pointer", display: "flex", alignItems: "center", transition: "0.15s",
+              }}
+            ><X size={16} /></button>
           </div>
 
           <div style={{ marginTop: 14, padding: "12px 16px", background: "#FFFFFF", border: "1.5px solid #EAE7DF", borderRadius: 10, display: "flex", flexDirection: "column", gap: 10 }}>
@@ -314,7 +361,13 @@ export default function DocumentDrawer({
                   <span style={{ fontSize: 12, fontWeight: 600, color: "#1A1A1A" }}>Status Proses Dinas</span>
                 </div>
                 <label style={{ display: "flex", alignItems: "center", cursor: isTogglingDinas ? "wait" : "pointer", position: "relative" }}>
-                  <input type="checkbox" checked={equipment.isProsesDinas || false} onChange={handleToggleProsesDinas} disabled={isTogglingDinas} style={{ opacity: 0, width: 0, height: 0, position: "absolute" }} />
+                  <input
+                    type="checkbox"
+                    checked={equipment.isProsesDinas || false}
+                    onChange={handleToggleProsesDinas}
+                    disabled={isTogglingDinas}
+                    style={{ opacity: 0, width: 0, height: 0, position: "absolute" }}
+                  />
                   <div style={{ width: 40, height: 22, borderRadius: 20, background: equipment.isProsesDinas ? "#3B82F6" : "#E5E2D8", transition: "0.3s", position: "relative", opacity: isTogglingDinas ? 0.6 : 1 }}>
                     <div style={{ width: 18, height: 18, borderRadius: "50%", background: "#FFF", position: "absolute", top: 2, left: equipment.isProsesDinas ? 20 : 2, transition: "0.3s", boxShadow: "0 2px 4px rgba(0,0,0,0.15)" }} />
                   </div>
@@ -322,19 +375,42 @@ export default function DocumentDrawer({
               </div>
             )}
           </div>
+
           {successMsg && (
-            <div style={{ marginTop: 10, padding: "9px 14px", borderRadius: 9, background: "rgba(34,160,100,0.07)", border: "1px solid rgba(34,160,100,0.2)", display: "flex", alignItems: "center", gap: 8, fontSize: 12, color: "#22A064", fontWeight: 500, animation: "drawerFadeIn 0.2s ease" }}><ShieldCheck size={13} /> {successMsg}</div>
+            <div style={{ marginTop: 10, padding: "9px 14px", borderRadius: 9, background: "rgba(34,160,100,0.07)", border: "1px solid rgba(34,160,100,0.2)", display: "flex", alignItems: "center", gap: 8, fontSize: 12, color: "#22A064", fontWeight: 500, animation: "drawerFadeIn 0.2s ease" }}>
+              <ShieldCheck size={13} /> {successMsg}
+            </div>
           )}
         </div>
 
+        {/* Content */}
         <div style={{ flex: 1, overflowY: "auto", padding: "20px 24px", display: "flex", flexDirection: "column", gap: 28 }}>
-          <DocumentTimeline suketList={suketList} userRole={userRole} isSubmitting={isSubmittingSuket} isDeletingId={isDeletingSuketId} onUpload={handleUploadSuket} onPreview={setPreviewUrl} onDelete={handleDeleteSuket} />
+          <DocumentTimeline
+            suketList={suketList}
+            userRole={userRole}
+            isSubmitting={isSubmittingSuket}
+            isDeletingId={isDeletingSuketId}
+            onUpload={handleUploadSuket}
+            onPreview={setPreviewUrl}
+            onDelete={handleDeleteSuket}
+          />
           <div style={{ height: 1, background: "linear-gradient(90deg, #F0A500 0%, transparent 60%)", opacity: 0.15 }} />
-          <LaporanSection laporanList={laporanList} userRole={userRole} isSubmitting={isSubmittingLaporan} onUpload={handleUploadLaporan} onPreview={setPreviewUrl} />
+          <LaporanSection
+            laporanList={laporanList}
+            userRole={userRole}
+            isSubmitting={isSubmittingLaporan}
+            isDeletingId={isDeletingLaporanId}
+            onUpload={handleUploadLaporan}
+            onPreview={setPreviewUrl}
+            onDelete={handleDeleteLaporan}
+          />
         </div>
 
+        {/* Footer */}
         <div style={{ padding: "12px 24px", borderTop: "1px solid #F0EDE4", background: "#FAFAF7", flexShrink: 0 }}>
-          <p style={{ fontSize: 10, color: "#1A1A1A", margin: 0, fontFamily: "monospace", textAlign: "center" }}>{userRole === "SUPERADMIN" ? "SUPERADMIN · Akses penuh" : "USER · Hanya melihat & unduh"}</p>
+          <p style={{ fontSize: 10, color: "#1A1A1A", margin: 0, fontFamily: "monospace", textAlign: "center" }}>
+            {userRole === "SUPERADMIN" ? "SUPERADMIN · Akses penuh" : "USER · Hanya melihat & unduh"}
+          </p>
         </div>
       </div>
 
