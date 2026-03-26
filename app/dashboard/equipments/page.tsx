@@ -9,7 +9,6 @@ import {
 } from "lucide-react";
 import * as XLSX from "xlsx-js-style";
 import DocumentDrawer from "@/components/equipment/DocumentDrawer";
-import EquipmentDetailPanel from "@/components/equipment/EquipmentDetailPanel";
 import { useConfirm } from "@/components/providers/confirm-dialog";
 
 // ============================================================
@@ -86,9 +85,7 @@ export default function EquipmentsPage() {
   const [isUploading, setIsUploading]       = useState(false);
   const [statusMsg, setStatusMsg]           = useState<{ type: "error" | "success"; text: string } | null>(null);
 
-  // Panel & drawer
-  const [panelOpen, setPanelOpen]   = useState(false);
-  const [panelEq, setPanelEq]       = useState<Equipment | null>(null);
+  // Drawer
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [activeEq, setActiveEq]     = useState<Equipment | null>(null);
 
@@ -149,10 +146,6 @@ export default function EquipmentsPage() {
       if (userRole === "SUPERADMIN" && companyId)
         data = data.filter((eq) => eq.companyId === companyId);
       setEquipments(data);
-      if (panelEq) {
-        const updated = data.find((eq) => eq.id === panelEq.id);
-        if (updated) setPanelEq(updated);
-      }
       if (activeEq) {
         const updated = data.find((eq) => eq.id === activeEq.id);
         if (updated) setActiveEq(updated);
@@ -242,7 +235,6 @@ export default function EquipmentsPage() {
       const res = await fetch(`/api/equipments/${id}`, { method: "DELETE" });
       if (!res.ok) throw new Error("Gagal menghapus data alat.");
       setStatusMsg({ type: "success", text: "Alat berhasil dihapus." });
-      if (panelEq?.id === id) setPanelOpen(false);
       fetchEquipments(selectedCompanyId);
       setSelectedEqIds((prev) => prev.filter((x) => x !== id));
     } catch (err: any) {
@@ -507,29 +499,39 @@ export default function EquipmentsPage() {
         .eq-tool-btn:disabled { opacity:0.35; cursor:not-allowed; }
         .eq-selected-tag { font-size:11px; font-weight:500; color:#C87A00; background:rgba(240,165,0,0.07); border:1px solid rgba(240,165,0,0.18); border-radius:6px; padding:3px 9px; white-space:nowrap; font-family:monospace; }
 
-        .eq-table-wrap { flex:1; overflow:auto; min-height:420px; }
-        .eq-table      { width:100%; border-collapse:collapse; text-align:left; }
-        .eq-table thead { position:sticky; top:0; z-index:5; background:#FAFAF7; }
-        .eq-table thead th { padding:12px 20px; font-size:10px; font-weight:500; text-transform:uppercase; letter-spacing:0.1em; color:#AAAAAA; border-bottom:1px solid #F0EDE4; white-space:nowrap; }
+        /* HORIZONTAL SCROLL UPDATES */
+        .eq-table-wrap { 
+          flex:1; 
+          overflow-x: auto; 
+          overflow-y: visible; 
+          min-height: 420px;
+          scrollbar-width: thin;
+          scrollbar-color: #EAE7DF transparent;
+        }
+        .eq-table-wrap::-webkit-scrollbar { height: 8px; }
+        .eq-table-wrap::-webkit-scrollbar-track { background: transparent; }
+        .eq-table-wrap::-webkit-scrollbar-thumb { background-color: #EAE7DF; border-radius: 4px; }
+
+        .eq-table      { width:100%; border-collapse:collapse; text-align:left; min-width: 1300px; }
+        .eq-table thead { position:sticky; top:0; z-index:15; background:#FAFAF7; }
+        .eq-table thead th { padding:12px 16px; font-size:10px; font-weight:500; text-transform:uppercase; letter-spacing:0.1em; color:#AAAAAA; border-bottom:1px solid #F0EDE4; white-space:nowrap; }
         .eq-table tbody tr { border-bottom:1px solid #F5F3EE; transition:background 0.12s; }
         .eq-table tbody tr:last-child { border-bottom:none; }
-        .eq-table tbody tr:hover td   { background:#FDFCF8; }
-        .eq-table tbody tr.active-row td { background:rgba(240,165,0,0.04) !important; }
-        .eq-table td { padding:14px 20px; vertical-align:middle; }
+        .eq-table tbody tr:hover td:not(.sticky-col)  { background:#FDFCF8; }
+        .eq-table td { padding:12px 16px; vertical-align:middle; white-space: nowrap; font-size: 13px; color: #1A1A1A; }
 
         .eq-eq-name   { font-size:13px; font-weight:600; color:#1A1A1A; cursor:pointer; display:inline; }
         .eq-eq-name:hover { color:#C87A00; text-decoration:underline; text-underline-offset:3px; }
-        .eq-eq-meta   { font-size:11px; color:#AAAAAA; margin-top:3px; font-family:monospace; }
-        .eq-permit    { font-size:11px; color:#888880; font-family:monospace; }
-        .eq-insp-date { font-size:11px; color:#BBBBBB; margin-top:3px; font-family:monospace; }
-        .eq-expiry    { font-size:12px; color:#555550; text-align:right; white-space:nowrap; font-family:monospace; }
+        .eq-permit    { font-size:12px; color:#555550; font-family:monospace; }
+        .eq-insp-date { font-size:12px; color:#555550; font-family:monospace; }
+        .eq-expiry    { font-size:12px; color:#555550; font-family:monospace; }
 
-        .eq-badge         { display:inline-flex; align-items:center; gap:5px; padding:3px 9px; border-radius:999px; font-size:10px; font-weight:500; text-transform:uppercase; letter-spacing:0.06em; white-space:nowrap; margin-top:5px; }
+        .eq-badge         { display:inline-flex; align-items:center; gap:5px; padding:3px 9px; border-radius:999px; font-size:10px; font-weight:500; text-transform:uppercase; letter-spacing:0.06em; white-space:nowrap; }
         .eq-badge.safe    { background:rgba(34,160,100,0.07);  border:1px solid rgba(34,160,100,0.18);  color:#22A064; }
         .eq-badge.warning { background:rgba(240,165,0,0.08);   border:1px solid rgba(240,165,0,0.2);    color:#C87A00; }
         .eq-badge.danger  { background:rgba(220,60,60,0.07);   border:1px solid rgba(220,60,60,0.18);   color:#DC3C3C; }
 
-        .eq-empty       { display:flex; flex-direction:column; align-items:center; justify-content:center; min-height:340px; text-align:center; padding:40px 20px; }
+        .eq-empty       { display:flex; flex-direction:column; align-items:center; justify-content:center; min-height:340px; text-align:center; padding:40px 20px; position: sticky; left: 0;}
         .eq-empty-icon  { width:56px; height:56px; background:#F5F3EE; border:1.5px solid #E5E2D8; border-radius:14px; display:flex; align-items:center; justify-content:center; margin:0 auto 16px; color:#CCCCCC; }
         .eq-empty-title { font-size:14px; font-weight:600; color:#555550; margin:0 0 6px; }
         .eq-empty-desc  { font-size:12px; color:#AAAAAA; margin:0; }
@@ -589,7 +591,6 @@ export default function EquipmentsPage() {
             {userRole === "SUPERADMIN" && (
               <div className="eq-left">
                 <div className="eq-card">
-                  {/* Header + search */}
                   <div className="eq-card-header" style={{ flexDirection: "column", alignItems: "stretch", gap: 10 }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                       <span className="eq-card-header-icon"><Building2 size={14} /></span>
@@ -604,7 +605,6 @@ export default function EquipmentsPage() {
                     </div>
                   </div>
 
-                  {/* List */}
                   <div className="eq-company-list">
                     {companies.length === 0 ? (
                       <div style={{ padding: "24px 14px", textAlign: "center" }}>
@@ -624,7 +624,6 @@ export default function EquipmentsPage() {
                     ))}
                   </div>
 
-                  {/* Pagination klien — selalu tampil */}
                   <div className="pag-bar">
                     <span className="pag-info">
                       {filteredCompanies.length === 0 ? "0 klien" : `${(companyPage - 1) * companiesPerPage + 1}–${Math.min(companyPage * companiesPerPage, filteredCompanies.length)} / ${filteredCompanies.length}`}
@@ -698,15 +697,22 @@ export default function EquipmentsPage() {
                     <table className="eq-table">
                       <thead>
                         <tr>
-                          <th style={{ width: 40, paddingRight: 0, textAlign: "center" }}>
+                          <th style={{ width: 40, paddingRight: 0, textAlign: "center", position: "sticky", left: 0, zIndex: 20, background: "#FAFAF7" }}>
                             <input type="checkbox" style={{ cursor: "pointer", accentColor: "#F0A500" }}
                               checked={paginatedEquipments.length > 0 && paginatedEquipments.every((eq) => selectedEqIds.includes(eq.id))}
                               onChange={toggleSelectAll} />
                           </th>
-                          <th>Informasi Alat</th>
-                          <th>Inspeksi & Izin</th>
-                          <th style={{ textAlign: "right" }}>Status Waktu</th>
-                          <th style={{ textAlign: "center" }}>Aksi</th>
+                          <th style={{ position: "sticky", left: 40, zIndex: 20, background: "#FAFAF7", boxShadow: "2px 0 5px rgba(0,0,0,0.03)" }}>Nama Alat</th>
+                          <th>Merek</th>
+                          <th>Lokasi / Area</th>
+                          <th>No. Izin</th>
+                          <th>Serial Number</th>
+                          <th>Kapasitas</th>
+                          <th>Tgl Inspeksi</th>
+                          <th>Tgl Kedaluwarsa</th>
+                          <th>Status</th>
+                          <th>Keterangan</th>
+                          <th style={{ textAlign: "center", position: "sticky", right: 0, zIndex: 20, background: "#FAFAF7", boxShadow: "-2px 0 5px rgba(0,0,0,0.03)" }}>Aksi</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -714,45 +720,47 @@ export default function EquipmentsPage() {
                           const status     = getStatus(eq.expiryDate);
                           const StatusIcon = status.icon;
                           const isSelected = selectedEqIds.includes(eq.id);
-                          const isActive   = panelEq?.id === eq.id && panelOpen;
                           const hasDocs    = (eq.suket?.length ?? 0) > 0 || (eq.laporan?.length ?? 0) > 0;
+                          
+                          // Pastikan cell yang beku warnanya ikut berubah saat di-select
+                          const stickyBg = isSelected ? "#FDFCF8" : "#FFFFFF";
 
                           return (
-                            <tr key={eq.id}
-                              className={isActive ? "active-row" : ""}
-                              style={{ background: isSelected ? "#FDFCF8" : "transparent" }}
-                            >
-                              <td style={{ width: 40, paddingRight: 0, textAlign: "center" }}>
+                            <tr key={eq.id} style={{ background: isSelected ? "#FDFCF8" : "transparent" }}>
+                              <td className="sticky-col" style={{ width: 40, paddingRight: 0, textAlign: "center", position: "sticky", left: 0, background: stickyBg, zIndex: 10 }}>
                                 <input type="checkbox" style={{ cursor: "pointer", accentColor: "#F0A500" }}
                                   checked={isSelected} onChange={() => toggleSelectEq(eq.id)} />
                               </td>
-                              <td>
-                                <p className="eq-eq-name" onClick={() => { setPanelEq(eq); setPanelOpen(true); }}>
+                              <td className="sticky-col" style={{ position: "sticky", left: 40, background: stickyBg, zIndex: 10, boxShadow: "2px 0 5px rgba(0,0,0,0.02)" }}>
+                                <p className="eq-eq-name" onClick={() => { setActiveEq(eq); setDrawerOpen(true); }}>
                                   {eq.name}
                                 </p>
-                                <p className="eq-eq-meta">
-                                  {[eq.brand, eq.area || eq.location].filter(Boolean).join(" · ") || "N/A"}
-                                </p>
+                              </td>
+                              <td><span className="eq-permit">{eq.brand || "-"}</span></td>
+                              <td><span className="eq-permit">{[eq.location, eq.area].filter(Boolean).join(" - ") || "-"}</span></td>
+                              <td><span className="eq-permit">{eq.permitNumber || "-"}</span></td>
+                              <td><span className="eq-permit">{eq.serialNumber || "-"}</span></td>
+                              <td><span className="eq-permit">{eq.capacity || "-"}</span></td>
+                              <td>
+                                <span className="eq-insp-date">
+                                  {new Date(eq.inspectionDate).toLocaleDateString("id-ID")}
+                                </span>
                               </td>
                               <td>
-                                <p className="eq-permit">No. Izin: {eq.permitNumber || "N/A"}</p>
-                                <p className="eq-insp-date">
-                                  Periksa: {new Date(eq.inspectionDate).toLocaleDateString("id-ID")}
-                                  {eq.capacity ? ` · ${eq.capacity}` : ""}
-                                </p>
-                              </td>
-                              <td style={{ textAlign: "right" }}>
-                                <p className="eq-expiry">
+                                <span className="eq-expiry">
                                   {new Date(eq.expiryDate).toLocaleDateString("id-ID", { day: "2-digit", month: "short", year: "numeric" })}
-                                </p>
-                                <div style={{ display: "flex", justifyContent: "flex-end" }}>
-                                  <span className={`eq-badge ${status.variant}`}>
-                                    <StatusIcon size={10} />
-                                    {status.label} ({status.days < 0 ? "Lewat" : `${status.days}hr`})
-                                  </span>
-                                </div>
+                                </span>
                               </td>
-                              <td style={{ textAlign: "center", verticalAlign: "middle" }}>
+                              <td>
+                                <span className={`eq-badge ${status.variant}`}>
+                                  <StatusIcon size={10} />
+                                  {status.label} ({status.days < 0 ? "Lewat" : `${status.days}hr`})
+                                </span>
+                              </td>
+                              <td style={{ maxWidth: 200, overflow: "hidden", textOverflow: "ellipsis", color: "#888880", fontSize: 12 }}>
+                                {eq.description || "-"}
+                              </td>
+                              <td className="sticky-col" style={{ textAlign: "center", verticalAlign: "middle", position: "sticky", right: 0, background: stickyBg, zIndex: 10, boxShadow: "-2px 0 5px rgba(0,0,0,0.02)" }}>
                                 <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
                                   <button onClick={() => { setActiveEq(eq); setDrawerOpen(true); }} className="doc-btn"
                                     style={{
@@ -760,17 +768,17 @@ export default function EquipmentsPage() {
                                       color:       hasDocs ? "#22A064" : "#888880",
                                       borderColor: hasDocs ? "rgba(34,160,100,0.2)" : "#E5E2D8",
                                     }}>
-                                    <FolderOpen size={13} /> Dokumen
+                                    <FolderOpen size={13} /> Dok
                                   </button>
                                   {userRole === "SUPERADMIN" && (
                                     <>
-                                      <button onClick={() => handleManualNotify(eq)} disabled={notifyingId === eq.id} className="action-btn notify">
+                                      <button onClick={() => handleManualNotify(eq)} disabled={notifyingId === eq.id} className="action-btn notify" title="Kirim Notifikasi">
                                         {notifyingId === eq.id ? <Loader2 size={14} className="eq-spinner" /> : <Send size={14} />}
                                       </button>
-                                      <button onClick={() => { setEditingEq(eq); setIsEditModalOpen(true); }} className="action-btn">
+                                      <button onClick={() => { setEditingEq(eq); setIsEditModalOpen(true); }} className="action-btn" title="Edit Data">
                                         <Edit size={14} />
                                       </button>
-                                      <button onClick={() => handleDeleteEq(eq.id, eq.name)} disabled={deletingId === eq.id} className="action-btn delete">
+                                      <button onClick={() => handleDeleteEq(eq.id, eq.name)} disabled={deletingId === eq.id} className="action-btn delete" title="Hapus Data">
                                         {deletingId === eq.id ? <Loader2 size={14} className="eq-spinner" /> : <Trash2 size={14} />}
                                       </button>
                                     </>
@@ -785,7 +793,6 @@ export default function EquipmentsPage() {
                   )}
                 </div>
 
-                {/* Pagination alat — selalu tampil kalau ada data */}
                 {filteredEquipments.length > 0 && (
                   <div className="pag-bar">
                     <span className="pag-info">
@@ -806,16 +813,6 @@ export default function EquipmentsPage() {
           </div>
         </div>
       </div>
-
-      {/* ── DETAIL PANEL ── */}
-      <EquipmentDetailPanel
-        equipment={panelEq}
-        isOpen={panelOpen}
-        userRole={userRole}
-        onClose={() => setPanelOpen(false)}
-        onEdit={(eq) => { setPanelOpen(false); setEditingEq(eq); setIsEditModalOpen(true); }}
-        onDocument={(eq) => { setPanelOpen(false); setActiveEq(eq); setDrawerOpen(true); }}
-      />
 
       {/* ── DOCUMENT DRAWER ── */}
       <DocumentDrawer

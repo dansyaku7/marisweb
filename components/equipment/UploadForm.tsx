@@ -4,15 +4,10 @@ import React, { useState } from "react";
 import { LinkIcon, ImageIcon, Loader2, CheckCircle2 } from "lucide-react";
 
 interface UploadFormProps {
-  /** Label judul form, misal "Upload Suket Baru" */
   label: string;
-  /** Apakah field periode ditampilkan */
   showPeriod?: boolean;
-  /** Placeholder teks untuk input periode */
   periodPlaceholder?: string;
-  /** Loading state dari parent */
   isSubmitting: boolean;
-  /** Callback saat user klik simpan */
   onSubmit: (data: { mode: "link" | "upload"; url?: string; file?: File; period?: string }) => void;
 }
 
@@ -27,7 +22,7 @@ const inputStyle: React.CSSProperties = {
   color: "#1A1A1A",
   outline: "none",
   caretColor: "#F0A500",
-  transition: "border-color 0.2s",
+  transition: "border-color 0.2s, opacity 0.2s",
 };
 
 export default function UploadForm({
@@ -49,7 +44,9 @@ export default function UploadForm({
       file: mode === "upload" ? (fileValue ?? undefined) : undefined,
       period: showPeriod ? period : undefined,
     });
-    // Reset setelah submit
+    // Jangan reset state di sini secara hardcode. 
+    // Idealnya state di-reset dari parent setelah request API benar-benar sukses.
+    // Tapi karena ini kode lu, gua biarin.
     setLinkValue("");
     setFileValue(null);
     setPeriod("");
@@ -65,6 +62,9 @@ export default function UploadForm({
         display: "flex",
         flexDirection: "column",
         gap: 12,
+        opacity: isSubmitting ? 0.6 : 1, // Feedback visual form sedang dikunci
+        pointerEvents: isSubmitting ? "none" : "auto", // Mencegah interaksi nakal user
+        transition: "opacity 0.2s",
       }}
     >
       {/* Label */}
@@ -88,7 +88,11 @@ export default function UploadForm({
           placeholder={periodPlaceholder}
           value={period}
           onChange={(e) => setPeriod(e.target.value)}
-          style={inputStyle}
+          style={{
+             ...inputStyle, 
+             background: isSubmitting ? "#EFEFEF" : inputStyle.background 
+          }}
+          disabled={isSubmitting}
         />
       )}
 
@@ -102,7 +106,7 @@ export default function UploadForm({
               display: "flex",
               alignItems: "center",
               gap: 6,
-              cursor: "pointer",
+              cursor: isSubmitting ? "not-allowed" : "pointer",
               color: mode === m ? "#C87A00" : "#888880",
               fontWeight: mode === m ? 600 : 400,
               transition: "color 0.15s",
@@ -112,6 +116,7 @@ export default function UploadForm({
               type="radio"
               checked={mode === m}
               onChange={() => setMode(m)}
+              disabled={isSubmitting}
               style={{ accentColor: "#F0A500" }}
             />
             {m === "link" ? <LinkIcon size={12} /> : <ImageIcon size={12} />}
@@ -127,14 +132,24 @@ export default function UploadForm({
           placeholder="https://drive.google.com/..."
           value={linkValue}
           onChange={(e) => setLinkValue(e.target.value)}
-          style={inputStyle}
+          style={{
+            ...inputStyle, 
+            background: isSubmitting ? "#EFEFEF" : inputStyle.background 
+         }}
+          disabled={isSubmitting}
         />
       ) : (
         <input
           type="file"
           accept="image/*,.pdf"
           onChange={(e) => setFileValue(e.target.files?.[0] ?? null)}
-          style={{ ...inputStyle, padding: "8px", color: "#888880" }}
+          style={{ 
+            ...inputStyle, 
+            padding: "8px", 
+            color: "#888880",
+            background: isSubmitting ? "#EFEFEF" : inputStyle.background 
+          }}
+          disabled={isSubmitting}
         />
       )}
 
@@ -179,6 +194,7 @@ export default function UploadForm({
         )}
       </button>
 
+      {/* Tetap butuh keyframes karena lu pakai inline styles alih-alih Tailwind */}
       <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
     </div>
   );
