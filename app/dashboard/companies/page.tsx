@@ -4,7 +4,7 @@ import React, { useEffect, useState } from "react";
 import {
   Building2, Plus, Mail, Key, Loader2,
   Search, AlertCircle, CheckCircle2, ShieldAlert,
-  Pencil, Trash2, X, User, Phone
+  Pencil, Trash2, X, User, Phone, ShieldCheck
 } from "lucide-react";
 
 interface Company {
@@ -23,6 +23,9 @@ export default function CompaniesPage() {
   const [isLoading, setIsLoading]   = useState(true);
   const [errorMsg, setErrorMsg]     = useState<string | null>(null);
   const [searchText, setSearchText] = useState("");
+  
+  // State Notifikasi Banner
+  const [statusMsg, setStatusMsg] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
   // Add modal
   const [isModalOpen, setIsModalOpen]   = useState(false);
@@ -38,7 +41,7 @@ export default function CompaniesPage() {
   const [editTarget, setEditTarget]           = useState<Company | null>(null);
   const [editData, setEditData] = useState({
     name: "", emailPic: "", isActive: true,
-    namePic: "", phonePic: "",
+    namePic: "", phonePic: "", password: "", // Tambah field password
   });
   const [isEditSubmitting, setIsEditSubmitting] = useState(false);
   const [editError, setEditError]               = useState<string | null>(null);
@@ -48,6 +51,13 @@ export default function CompaniesPage() {
   const [deleteTarget, setDeleteTarget]   = useState<Company | null>(null);
   const [isDeleting, setIsDeleting]       = useState(false);
   const [deleteError, setDeleteError]     = useState<string | null>(null);
+
+  // Auto-clear notifikasi banner
+  useEffect(() => {
+    if (!statusMsg) return;
+    const t = setTimeout(() => setStatusMsg(null), 4000);
+    return () => clearTimeout(t);
+  }, [statusMsg]);
 
   const fetchCompanies = async () => {
     setIsLoading(true); setErrorMsg(null);
@@ -76,6 +86,7 @@ export default function CompaniesPage() {
       if (!res.ok) throw new Error(data.message || "Gagal membuat klien");
       setFormData({ name: "", emailPic: "", password: "", namePic: "", phonePic: "" });
       setIsModalOpen(false);
+      setStatusMsg({ type: "success", text: "Klien baru berhasil didaftarkan." }); // Notif Sukses
       fetchCompanies();
     } catch (err: any) {
       setFormError(err.message);
@@ -89,6 +100,7 @@ export default function CompaniesPage() {
     setEditData({
       name: company.name, emailPic: company.emailPic, isActive: company.isActive,
       namePic: company.namePic || "", phonePic: company.phonePic || "",
+      password: "", // Reset password tiap kali buka modal
     });
     setEditError(null); setIsEditOpen(true);
   };
@@ -105,6 +117,10 @@ export default function CompaniesPage() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || "Gagal memperbarui klien");
       setIsEditOpen(false); setEditTarget(null);
+      setStatusMsg({ 
+        type: "success", 
+        text: editData.password ? "Data & Password klien berhasil diperbarui." : "Data klien berhasil diperbarui." 
+      }); // Notif Sukses
       fetchCompanies();
     } catch (err: any) {
       setEditError(err.message);
@@ -125,6 +141,7 @@ export default function CompaniesPage() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || "Gagal menghapus klien");
       setIsDeleteOpen(false); setDeleteTarget(null);
+      setStatusMsg({ type: "success", text: "Klien berhasil dihapus permanen." }); // Notif Sukses
       fetchCompanies();
     } catch (err: any) {
       setDeleteError(err.message);
@@ -165,6 +182,10 @@ export default function CompaniesPage() {
 
         .cp-divider { height:1px; background:linear-gradient(90deg,#F0A500 0%,transparent 60%); margin-bottom:28px; opacity:0.2; }
         .cp-error-bar { display:flex; align-items:center; gap:10px; background:rgba(220,60,60,0.06); border:1px solid rgba(220,60,60,0.15); border-radius:10px; padding:14px 16px; margin-bottom:24px; font-size:13px; color:#DC3C3C; }
+
+        .cp-status-msg         { display:flex; align-items:center; gap:10px; padding:13px 16px; border-radius:10px; font-size:13px; margin-bottom:24px; animation: cp-fadeup 0.3s ease; }
+        .cp-status-msg.error   { background:rgba(220,60,60,0.06);  border:1px solid rgba(220,60,60,0.15);  color:#DC3C3C; }
+        .cp-status-msg.success { background:rgba(34,160,100,0.06); border:1px solid rgba(34,160,100,0.15); color:#22A064; }
 
         .cp-table-card { background:#FFFFFF; border:1.5px solid #E8E4DC; border-radius:16px; overflow:hidden; box-shadow:0 2px 16px rgba(0,0,0,0.05); }
         .cp-toolbar { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:14px 20px; border-bottom:1px solid #F0EDE4; background:#FAFAF7; flex-wrap:wrap; }
@@ -285,6 +306,16 @@ export default function CompaniesPage() {
           </div>
 
           <div className="cp-divider" />
+
+          {/* NOTIFIKASI BERHASIL/GAGAL */}
+          {statusMsg && (
+            <div className={`cp-status-msg ${statusMsg.type}`}>
+              {statusMsg.type === "error"
+                ? <AlertCircle size={15} style={{ flexShrink: 0 }} />
+                : <ShieldCheck size={15} style={{ flexShrink: 0 }} />}
+              {statusMsg.text}
+            </div>
+          )}
 
           {errorMsg && (
             <div className="cp-error-bar">
@@ -564,6 +595,23 @@ export default function CompaniesPage() {
                   </div>
                 </div>
 
+                {/* ── FITUR GANTI KATA SANDI ── */}
+                <p className="cp-form-section">Keamanan</p>
+                <div className="cp-field">
+                  <label className="cp-field-label">Ganti Kata Sandi</label>
+                  <div className="cp-field-wrap">
+                    <Key size={14} className="cp-field-icon" />
+                    <input 
+                      type="password" 
+                      className="cp-field-input"
+                      placeholder="Isi hanya jika ingin ganti sandi..."
+                      value={editData.password}
+                      onChange={(e) => setEditData({ ...editData, password: e.target.value })} 
+                    />
+                  </div>
+                  <p className="cp-field-hint">Kosongkan jika tidak ingin mengubah kata sandi.</p>
+                </div>
+
                 <div className="cp-toggle-row">
                   <div>
                     <p className="cp-toggle-label">Status Akun</p>
@@ -579,7 +627,7 @@ export default function CompaniesPage() {
               <div className="cp-modal-actions">
                 <button type="button" className="cp-btn-cancel" onClick={() => setIsEditOpen(false)} disabled={isEditSubmitting}>Batal</button>
                 <button type="submit" className="cp-btn-submit" disabled={isEditSubmitting}>
-                  {isEditSubmitting ? <Loader2 size={15} className="cp-spinner" /> : "Simpan"}
+                  {isEditSubmitting ? <Loader2 size={15} className="cp-spinner" /> : "Simpan Perubahan"}
                 </button>
               </div>
             </form>

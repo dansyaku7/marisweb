@@ -161,3 +161,15 @@ model EmailTemplate {
   @@index([companyId])
   @@map("email_templates")
 }
+
+model PasswordResetToken {
+  id        String   @id @default(uuid())
+  email     String
+  token     String   @unique
+  expires   DateTime
+  createdAt DateTime @default(now())
+
+  @@index([email])
+  @@index([token])
+  @@map("password_reset_tokens")
+}

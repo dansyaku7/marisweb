@@ -5,8 +5,9 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import * as jwt from 'jsonwebtoken';
 import { cookies } from 'next/headers';
+import bcrypt from 'bcryptjs'; // TAMBAHAN: Untuk enkripsi password
 
-// PATCH: Perbarui Data Perusahaan
+// PATCH: Perbarui Data Perusahaan & Password User
 export async function PATCH(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
@@ -27,7 +28,8 @@ export async function PATCH(
     const companyId      = resolvedParams.id;
 
     const body = await request.json();
-    const { name, emailPic, isActive, namePic, phonePic } = body;
+    // Tambah password di destructuring
+    const { name, emailPic, isActive, namePic, phonePic, password } = body;
 
     if (!name || !emailPic) {
       return NextResponse.json(
@@ -36,20 +38,37 @@ export async function PATCH(
       );
     }
 
+    // 1. Update data perusahaan
     const updatedCompany = await prisma.company.update({
       where: { id: companyId },
       data:  {
         name,
         emailPic,
         isActive,
-        // Field baru — simpan null kalau dikosongkan
         namePic:  namePic?.trim()  ?? null,
         phonePic: phonePic?.trim() ?? null,
       },
     });
 
+    // 2. Update data User (Password & Email Login)
+    // Kita update email login supaya selalu sama dengan email PIC yang baru
+    const userData: any = { email: emailPic };
+
+    // Jika admin mengisi field password, kita hash dan masukkan ke data update
+    if (password && password.trim() !== "") {
+      if (password.length < 6) {
+        return NextResponse.json({ message: 'Password minimal 6 karakter.' }, { status: 400 });
+      }
+      userData.password = await bcrypt.hash(password, 10);
+    }
+
+    await prisma.user.updateMany({
+      where: { companyId: companyId },
+      data: userData,
+    });
+
     return NextResponse.json(
-      { message: 'Data klien berhasil diperbarui', company: updatedCompany },
+      { message: 'Data klien & akun berhasil diperbarui', company: updatedCompany },
       { status: 200 }
     );
 
@@ -57,7 +76,7 @@ export async function PATCH(
     console.error('[EDIT COMPANY ERROR]:', error);
     if (error.code === 'P2002') {
       return NextResponse.json(
-        { message: 'Email tersebut sudah digunakan oleh perusahaan lain.' },
+        { message: 'Email atau Nama Perusahaan sudah digunakan.' },
         { status: 400 }
       );
     }
@@ -88,14 +107,16 @@ export async function DELETE(
     const resolvedParams = await params;
     const companyId      = resolvedParams.id;
 
+    // Tambahkan penghapusan User dalam transaksi agar tidak ada data sampah
     await prisma.$transaction([
       prisma.emailLog.deleteMany(   { where: { companyId } }),
       prisma.equipment.deleteMany(  { where: { companyId } }),
+      prisma.user.deleteMany(       { where: { companyId } }), // Hapus akun login juga
       prisma.company.delete(        { where: { id: companyId } }),
     ]);
 
     return NextResponse.json(
-      { message: 'Klien beserta seluruh data alat berhasil dihapus.' },
+      { message: 'Klien beserta seluruh data akun dan alat berhasil dihapus.' },
       { status: 200 }
     );
 

@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, FormEvent } from "react";
-import { Loader2 } from "lucide-react";
+import { Loader2, X, Mail, CheckCircle2, AlertCircle } from "lucide-react"; // Nambah icon pendukung
 
 const EyeIcon = ({ className }: { className?: string }) => (
   <svg className={className} xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z" /><circle cx="12" cy="12" r="3" /></svg>
@@ -18,18 +18,24 @@ const StatCard = ({ value, label }: { value: string; label: string }) => (
 );
 
 export default function LoginPage() {
-  const [email, setEmail]             = useState("");
-  const [password, setPassword]       = useState("");
+  const [email, setEmail]               = useState("");
+  const [password, setPassword]         = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [error, setError]             = useState<string | null>(null);
-  const [isLoading, setIsLoading]     = useState(false);
+  const [error, setError]               = useState<string | null>(null);
+  const [isLoading, setIsLoading]       = useState(false);
+
+  // ── TAMBAHAN STATE LUPA PASSWORD (TIDAK MENGHAPUS YANG LAMA) ──
+  const [isForgotOpen, setIsForgotOpen]     = useState(false);
+  const [forgotEmail, setForgotEmail]       = useState("");
+  const [forgotLoading, setForgotLoading]   = useState(false);
+  const [forgotStatus, setForgotStatus]     = useState<{ type: "success" | "error"; text: string } | null>(null);
 
   const handleSubmit = async (event: FormEvent) => {
     event.preventDefault();
     setIsLoading(true);
     setError(null);
     try {
-      const response = await fetch("/api/auth/login", {
+      const response = await fetch("/api/auth/forgot-password", { // Pastikan endpoint API sudah dibuat
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),
@@ -42,6 +48,28 @@ export default function LoginPage() {
     } catch (err: any) {
       setError(err.message);
       setIsLoading(false);
+    }
+  };
+
+  // ── LOGIC SUBMIT RESET PASSWORD ──
+  const handleForgotSubmit = async (e: FormEvent) => {
+    e.preventDefault();
+    setForgotLoading(true);
+    setForgotStatus(null);
+    try {
+      const res = await fetch("/api/auth/forgot-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: forgotEmail }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || "Gagal mengirim permintaan.");
+      setForgotStatus({ type: "success", text: "Link reset berhasil dikirim ke email Anda." });
+      setForgotEmail("");
+    } catch (err: any) {
+      setForgotStatus({ type: "error", text: err.message });
+    } finally {
+      setForgotLoading(false);
     }
   };
 
@@ -177,11 +205,19 @@ export default function LoginPage() {
         .pw-toggle:hover { color: #F0A500; }
         .pw-toggle svg { display: block; pointer-events: none; }
 
-        .remember-row { display: flex; align-items: center; gap: 10px; margin-bottom: 28px; }
+        .remember-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 28px; }
         .custom-checkbox { appearance: none; width: 16px; height: 16px; border: 1.5px solid #C8C0B0; border-radius: 4px; background: #F8F7F3; cursor: pointer; transition: all 0.2s; flex-shrink: 0; position: relative; }
         .custom-checkbox:checked { background: #F0A500; border-color: #F0A500; }
         .custom-checkbox:checked::after { content: ''; display: block; width: 4px; height: 7px; border: 2px solid #FFFFFF; border-top: none; border-left: none; position: absolute; top: 1px; left: 5px; transform: rotate(45deg); }
         .remember-label { font-size: 13px; font-weight: 500; color: #555550; cursor: pointer; }
+
+        /* ── TAMBAHAN CSS FORGOT PASSWORD (ITEM PEKAT) ── */
+        .forgot-link { font-size: 13px; font-weight: 700; color: #1A1A1A; cursor: pointer; background: none; border: none; transition: color 0.2s; text-decoration: underline; text-underline-offset: 4px; }
+        .forgot-link:hover { color: #C87A00; }
+
+        .modal-overlay { position: fixed; inset: 0; z-index: 1000; background: rgba(0,0,0,0.4); backdrop-filter: blur(8px); display: flex; align-items: center; justify-content: center; padding: 20px; animation: fadeIn 0.2s ease; }
+        .modal-card { background: #FFFFFF; border: 1.5px solid #E8E4DC; border-radius: 20px; width: 100%; max-width: 400px; padding: 32px; position: relative; box-shadow: 0 20px 50px rgba(0,0,0,0.15); }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 
         .submit-btn { display: flex; width: 100%; align-items: center; justify-content: center; gap: 8px; background: #F0A500; border: none; border-radius: 12px; padding: 15px; font-family: inherit; font-size: 14px; font-weight: 700; color: #1A1A1A; letter-spacing: 0.02em; cursor: pointer; transition: background 0.2s, transform 0.15s, box-shadow 0.2s; box-shadow: 0 4px 14px rgba(240,165,0,0.2); position: relative; overflow: hidden; }
         .submit-btn::before { content: ''; position: absolute; inset: 0; background: linear-gradient(135deg, rgba(255,255,255,0.18) 0%, transparent 60%); pointer-events: none; }
@@ -226,7 +262,7 @@ export default function LoginPage() {
             </p>
             <div className="divider-line" />
             <div className="stats-row">
-              <StatCard value="40+" label="Perusahaan" />
+              <StatCard value="70+" label="Perusahaan" />
               <StatCard value="99.8%" label="Uptime" />
               <StatCard value="<1d" label="Respons" />
             </div>
@@ -243,7 +279,7 @@ export default function LoginPage() {
                   <div className="avatar a2">CV</div>
                   <div className="avatar a3">+8</div>
                 </div>
-                <span className="trust-text">Dipercaya <strong>40+ Perusahaan</strong></span>
+                <span className="trust-text">Dipercaya <strong>70+ Perusahaan</strong></span>
               </div>
             </div>
           </div>
@@ -295,8 +331,14 @@ export default function LoginPage() {
               </div>
 
               <div className="remember-row">
-                <input id="remember-me" type="checkbox" className="custom-checkbox" />
-                <label htmlFor="remember-me" className="remember-label">Ingat saya di perangkat ini</label>
+                <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                  <input id="remember-me" type="checkbox" className="custom-checkbox" />
+                  <label htmlFor="remember-me" className="remember-label">Ingat saya</label>
+                </div>
+                {/* ── TOMBOL LUPA SANDI ── */}
+                <button type="button" className="forgot-link" onClick={() => setIsForgotOpen(true)}>
+                  Lupa Kata Sandi?
+                </button>
               </div>
 
               <button type="submit" className="submit-btn" disabled={isLoading}>
@@ -321,6 +363,49 @@ export default function LoginPage() {
         </div>
 
       </div>
+
+      {/* ── MODAL LUPA PASSWORD (ITEM PEKAT & KONTRAS) ── */}
+      {isForgotOpen && (
+        <div className="modal-overlay">
+          <div className="modal-card">
+            <button onClick={() => { setIsForgotOpen(false); setForgotStatus(null); }} style={{ position: "absolute", right: 20, top: 20, background: "none", border: "none", cursor: "pointer", color: "#1A1A1A" }}>
+              <X size={20} />
+            </button>
+            
+            <div style={{ width: 48, height: 48, background: "#F0A500", borderRadius: 12, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 20, boxShadow: "0 4px 12px rgba(240,165,0,0.2)" }}>
+              <Mail size={24} color="#1A1A1A" />
+            </div>
+
+            <h3 style={{ fontSize: 20, fontWeight: 800, color: "#1A1A1A", marginBottom: 8 }}>Lupa Kata Sandi?</h3>
+            <p style={{ fontSize: 14, color: "#1A1A1A", opacity: 0.7, marginBottom: 24, lineHeight: 1.5 }}>
+              Masukkan email perusahaan Anda. Kami akan mengirimkan link untuk mengatur ulang kata sandi.
+            </p>
+
+            {forgotStatus && (
+              <div style={{ 
+                padding: 14, borderRadius: 12, marginBottom: 20, fontSize: 13, display: "flex", gap: 10,
+                background: forgotStatus.type === "success" ? "rgba(34,197,94,0.06)" : "rgba(220,38,38,0.06)",
+                border: `1px solid ${forgotStatus.type === "success" ? "rgba(34,197,94,0.2)" : "rgba(220,38,38,0.2)"}`,
+                color: forgotStatus.type === "success" ? "#166534" : "#DC2626"
+              }}>
+                {forgotStatus.type === "success" ? <CheckCircle2 size={16} /> : <AlertCircle size={16} />}
+                {forgotStatus.text}
+              </div>
+            )}
+
+            <form onSubmit={handleForgotSubmit}>
+              <div style={{ marginBottom: 20 }}>
+                <label className="field-label">Email Perusahaan</label>
+                <input className="field-input" type="email" required placeholder="nama@perusahaan.com" 
+                  value={forgotEmail} onChange={(e) => setForgotEmail(e.target.value)} disabled={forgotLoading} />
+              </div>
+              <button type="submit" className="submit-btn" disabled={forgotLoading}>
+                {forgotLoading ? <Loader2 style={{ width: 18, height: 18, animation: "spin 1s linear infinite" }} /> : "Kirim Link Reset"}
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
     </>
   );
 }
