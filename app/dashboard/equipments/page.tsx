@@ -21,11 +21,11 @@ interface Equipment {
   id: string; name: string; permitNumber: string; serialNumber: string;
   location: string | null; inspectionDate: string; expiryDate: string;
   companyId?: string;
-  area?:          string | null;
-  brand?:         string | null;
-  capacity?:      string | null;
+  area?:        string | null;
+  brand?:       string | null;
+  capacity?:    string | null;
   description?: string | null;
-  isProsesDinas?: boolean; // TAMBAHAN DATABASE BARU LU
+  isProsesDinas?: boolean;
   suket?:       Suket[];
   laporan?:     Laporan[];
   company?:     { name: string };
@@ -129,7 +129,6 @@ export default function EquipmentsPage() {
     setSearchEqText(""); setEqPage(1); setSelectedEqIds([]);
   }, [selectedCompanyId]);
 
-  // Reset page kalau search berubah
   useEffect(() => { setEqPage(1); },      [searchEqText]);
   useEffect(() => { setCompanyPage(1); }, [searchCompanyText]);
 
@@ -167,36 +166,23 @@ export default function EquipmentsPage() {
       setStatusMsg({ type: "error", text: "Pilih setidaknya satu alat terlebih dahulu." });
       return;
     }
-
     const label = type === 'inspeksi' ? 'permohonan inspeksi ulang' : 'permintaan dokumen (Suket/Laporan)';
     const ok = await confirm({
-      variant: "info",
-      title: "Kirim Permohonan",
+      variant: "info", title: "Kirim Permohonan",
       description: `Kirim ${label} untuk ${selectedEqIds.length} alat yang dipilih ke Admin Marusindo?`,
-      confirmLabel: "Ya, Kirim",
-      cancelLabel: "Batal",
+      confirmLabel: "Ya, Kirim", cancelLabel: "Batal",
     });
-
     if (!ok) return;
-
-    setIsSubmittingRequest(true);
-    setStatusMsg(null);
-
+    setIsSubmittingRequest(true); setStatusMsg(null);
     try {
       const res = await fetch("/api/equipments/client-request", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          equipmentIds: selectedEqIds,
-          requestType: type
-        }),
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ equipmentIds: selectedEqIds, requestType: type }),
       });
-
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || "Gagal mengirim permohonan.");
-
       setStatusMsg({ type: "success", text: data.message });
-      setSelectedEqIds([]); // Reset seleksi setelah berhasil
+      setSelectedEqIds([]);
     } catch (err: any) {
       setStatusMsg({ type: "error", text: err.message });
     } finally {
@@ -340,44 +326,29 @@ export default function EquipmentsPage() {
     }
   };
 
-  // ── Admin Notify (DITINGKATKAN) ──
+  // ── Admin Notify ──
   const handleAdminNotify = async (type: 'expired' | 'ready') => {
     if (!selectedCompanyId) return;
     const isCustom = selectedEqIds.length > 0;
-    
-    const config = type === 'expired' 
-      ? { title: "Alert Expired", label: "Peringatan Expired", variant: "danger" as const, icon: MailWarning }
-      : { title: "Notif Dokumen", label: "Notif Dokumen Ready", variant: "info" as const, icon: FileCheck };
-
+    const config = type === 'expired'
+      ? { title: "Alert Expired", label: "Peringatan Expired", variant: "danger" as const }
+      : { title: "Notif Dokumen", label: "Notif Dokumen Ready", variant: "info" as const };
     const ok = await confirm({
-      variant: config.variant,
-      title: config.title,
-      description: isCustom 
+      variant: config.variant, title: config.title,
+      description: isCustom
         ? `Kirim ${config.label.toLowerCase()} untuk ${selectedEqIds.length} alat yang dipilih?`
         : `Tidak ada alat dipilih. Kirim ${config.label.toLowerCase()} ke semua alat yang sesuai?`,
-      confirmLabel: "Ya, Kirim",
-      cancelLabel: "Batal",
+      confirmLabel: "Ya, Kirim", cancelLabel: "Batal",
     });
-
     if (!ok) return;
-
-    setIsNotifyingBulkAll(true);
-    setStatusMsg(null);
-
+    setIsNotifyingBulkAll(true); setStatusMsg(null);
     try {
-      // Kita pakai endpoint notify-bulk yang lebih generic
       const res = await fetch(`/api/companies/${selectedCompanyId}/notify-bulk`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ 
-          selectedIds: selectedEqIds,
-          type: type // 'expired' atau 'ready'
-        }),
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ selectedIds: selectedEqIds, type }),
       });
-
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || "Gagal mengirim notifikasi.");
-
       setStatusMsg({ type: "success", text: data.message });
       setSelectedEqIds([]);
     } catch (err: any) {
@@ -516,14 +487,15 @@ export default function EquipmentsPage() {
         @keyframes eq-fadeup { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:translateY(0); } }
         @keyframes eq-spin   { to { transform: rotate(360deg); } }
 
-        .eq-inner { padding:28px 20px; max-width:1280px; margin:0 auto; animation: eq-fadeup 0.4s ease both; }
-        @media (min-width:768px)  { .eq-inner { padding:40px 32px; } }
-        @media (min-width:1024px) { .eq-inner { padding:48px 48px; } }
+        /* ↓ Tambah paddingBottom 80px supaya konten bawah ga tertutup */
+        .eq-inner { padding:28px 20px 80px; max-width:1280px; margin:0 auto; animation: eq-fadeup 0.4s ease both; }
+        @media (min-width:768px)  { .eq-inner { padding:40px 32px 80px; } }
+        @media (min-width:1024px) { .eq-inner { padding:48px 48px 80px; } }
 
         .eq-eyebrow    { font-size:10px; font-weight:500; color:#C87A00; text-transform:uppercase; letter-spacing:0.14em; margin-bottom:8px; }
         .eq-page-title { font-size:clamp(20px,3.5vw,26px); font-weight:700; color:#1A1A1A; margin:0 0 6px; line-height:1.15; display:flex; align-items:center; gap:12px; }
         .eq-title-icon { width:36px; height:36px; background:rgba(240,165,0,0.08); border:1.5px solid rgba(240,165,0,0.18); border-radius:10px; display:flex; align-items:center; justify-content:center; color:#C87A00; flex-shrink:0; }
-        .eq-page-desc  { font-size:13px; color:#1A1A1A; margin:0; } /* UBAH: ABU KE ITEM */
+        .eq-page-desc  { font-size:13px; color:#1A1A1A; margin:0; }
         .eq-divider    { height:1px; background:linear-gradient(90deg,#F0A500 0%,transparent 60%); margin:24px 0 28px; opacity:0.2; }
 
         .eq-status-msg         { display:flex; align-items:center; gap:10px; padding:13px 16px; border-radius:10px; font-size:13px; margin-bottom:24px; }
@@ -539,24 +511,23 @@ export default function EquipmentsPage() {
         .eq-card        { background:#FFFFFF; border:1.5px solid #E8E4DC; border-radius:14px; overflow:hidden; box-shadow:0 2px 12px rgba(0,0,0,0.05); }
         .eq-card-header { padding:14px 18px; background:#FAFAF7; border-bottom:1px solid #F0EDE4; display:flex; align-items:center; gap:8px; }
         .eq-card-header-icon { width:28px; height:28px; background:rgba(240,165,0,0.08); border:1.5px solid rgba(240,165,0,0.18); border-radius:7px; display:flex; align-items:center; justify-content:center; color:#C87A00; flex-shrink:0; }
-        .eq-card-title  { font-size:13px; font-weight:600; color:#1A1A1A; } /* UBAH: ABU KE ITEM */
+        .eq-card-title  { font-size:13px; font-weight:600; color:#1A1A1A; }
 
         .eq-company-list { padding:8px; display:flex; flex-direction:column; gap:2px; }
-
-        .eq-company-btn       { width:100%; text-align:left; padding:10px 14px; border-radius:9px; background:transparent; border:1.5px solid transparent; font-family:inherit; font-size:13px; font-weight:500; color:#1A1A1A; cursor:pointer; display:flex; align-items:center; justify-content:space-between; gap:8px; transition:0.15s; } /* UBAH: ABU KE ITEM */
+        .eq-company-btn       { width:100%; text-align:left; padding:10px 14px; border-radius:9px; background:transparent; border:1.5px solid transparent; font-family:inherit; font-size:13px; font-weight:500; color:#1A1A1A; cursor:pointer; display:flex; align-items:center; justify-content:space-between; gap:8px; transition:0.15s; }
         .eq-company-btn:hover { background:#F5F3EE; color:#1A1A1A; border-color:#EAE7DF; }
         .eq-company-btn.active{ background:rgba(240,165,0,0.08); border-color:rgba(240,165,0,0.22); color:#C87A00; font-weight:600; }
         .eq-company-btn span  { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 
         .eq-toolbar      { padding:14px 18px; background:#FAFAF7; border-bottom:1px solid #F0EDE4; display:flex; flex-wrap:wrap; align-items:center; gap:10px; }
         .eq-search-wrap  { position:relative; flex:1; min-width:160px; max-width:320px; }
-        .eq-search-icon  { position:absolute; left:11px; top:50%; transform:translateY(-50%); color:#1A1A1A; pointer-events:none; } /* UBAH: ABU KE ITEM */
+        .eq-search-icon  { position:absolute; left:11px; top:50%; transform:translateY(-50%); color:#1A1A1A; pointer-events:none; }
         .eq-search-input { width:100%; padding:9px 14px 9px 34px; background:#FFFFFF; border:1.5px solid #E5E2D8; border-radius:8px; font-family:inherit; font-size:13px; color:#1A1A1A; outline:none; transition:0.2s; caret-color:#F0A500; }
         .eq-search-input::placeholder { color:#CCCCCC; }
         .eq-search-input:focus         { border-color:rgba(240,165,0,0.35); box-shadow:0 0 0 3px rgba(240,165,0,0.08); }
         .eq-search-input:disabled      { opacity:0.4; cursor:not-allowed; }
 
-        .eq-tool-btn             { display:flex; align-items:center; gap:7px; padding:8px 14px; background:#FFFFFF; border:1.5px solid #E5E2D8; border-radius:8px; font-family:inherit; font-size:12px; font-weight:500; color:#1A1A1A; cursor:pointer; white-space:nowrap; transition:0.2s; } /* UBAH: ABU KE ITEM */
+        .eq-tool-btn             { display:flex; align-items:center; gap:7px; padding:8px 14px; background:#FFFFFF; border:1.5px solid #E5E2D8; border-radius:8px; font-family:inherit; font-size:12px; font-weight:500; color:#1A1A1A; cursor:pointer; white-space:nowrap; transition:0.2s; }
         .eq-tool-btn:hover:not(:disabled)       { background:#F5F3EE; border-color:#C8C0B0; color:#1A1A1A; }
         .eq-tool-btn.amber:hover:not(:disabled) { background:rgba(240,165,0,0.07); border-color:rgba(240,165,0,0.25); color:#C87A00; }
         .eq-tool-btn.red:hover:not(:disabled)   { background:rgba(220,60,60,0.06);  border-color:rgba(220,60,60,0.2);  color:#DC3C3C; }
@@ -564,11 +535,10 @@ export default function EquipmentsPage() {
         .eq-tool-btn:disabled { opacity:0.35; cursor:not-allowed; }
         .eq-selected-tag { font-size:11px; font-weight:500; color:#C87A00; background:rgba(240,165,0,0.07); border:1px solid rgba(240,165,0,0.18); border-radius:6px; padding:3px 9px; white-space:nowrap; font-family:monospace; }
 
-        /* HORIZONTAL SCROLL UPDATES */
-        .eq-table-wrap { 
-          flex:1; 
-          overflow-x: auto; 
-          overflow-y: visible; 
+        .eq-table-wrap {
+          flex:1;
+          overflow-x: auto;
+          overflow-y: visible;
           min-height: 420px;
           scrollbar-width: thin;
           scrollbar-color: #EAE7DF transparent;
@@ -579,58 +549,76 @@ export default function EquipmentsPage() {
 
         .eq-table      { width:100%; border-collapse:collapse; text-align:left; min-width: 1300px; }
         .eq-table thead { position:sticky; top:0; z-index:15; background:#FAFAF7; }
-        .eq-table thead th { padding:12px 16px; font-size:10px; font-weight:600; text-transform:uppercase; letter-spacing:0.1em; color:#1A1A1A; border-bottom:1px solid #F0EDE4; white-space:nowrap; } /* UBAH: ABU KE ITEM */
+        .eq-table thead th { padding:12px 16px; font-size:10px; font-weight:600; text-transform:uppercase; letter-spacing:0.1em; color:#1A1A1A; border-bottom:1px solid #F0EDE4; white-space:nowrap; }
         .eq-table tbody tr { border-bottom:1px solid #F5F3EE; transition:background 0.12s; }
         .eq-table tbody tr:last-child { border-bottom:none; }
-        .eq-table tbody tr:hover td:not(.sticky-col)  { background:#FDFCF8; }
+        .eq-table tbody tr:hover td:not(.sticky-col) { background:#FDFCF8; }
         .eq-table td { padding:12px 16px; vertical-align:middle; white-space: nowrap; font-size: 13px; color: #1A1A1A; }
 
         .eq-eq-name   { font-size:13px; font-weight:600; color:#1A1A1A; cursor:pointer; display:inline; }
         .eq-eq-name:hover { color:#C87A00; text-decoration:underline; text-underline-offset:3px; }
-        .eq-permit, .eq-insp-date, .eq-expiry { font-size:12px; color:#1A1A1A; font-family:monospace; } /* UBAH: SEMUA KE ITEM */
+        .eq-permit, .eq-insp-date, .eq-expiry { font-size:12px; color:#1A1A1A; font-family:monospace; }
 
-        /* BADGES */
         .eq-badge          { display:inline-flex; align-items:center; gap:5px; padding:3px 9px; border-radius:999px; font-size:10px; font-weight:500; text-transform:uppercase; letter-spacing:0.06em; white-space:nowrap; }
         .eq-badge.safe    { background:rgba(34,160,100,0.07);  border:1px solid rgba(34,160,100,0.18);  color:#22A064; }
         .eq-badge.warning { background:rgba(240,165,0,0.08);   border:1px solid rgba(240,165,0,0.2);    color:#C87A00; }
         .eq-badge.danger  { background:rgba(220,60,60,0.07);   border:1px solid rgba(220,60,60,0.18);   color:#DC3C3C; }
-        /* Badge Tambahan: Proses Dinas */
         .eq-badge.process { background:rgba(59,130,246,0.08);  border:1px solid rgba(59,130,246,0.22);  color:#3B82F6; }
 
-        .eq-empty       { display:flex; flex-direction:column; align-items:center; justify-content:center; min-height:340px; text-align:center; padding:40px 20px; position: sticky; left: 0;}
-        .eq-empty-icon  { width:56px; height:56px; background:#F5F3EE; border:1.5px solid #E5E2D8; border-radius:14px; display:flex; align-items:center; justify-content:center; margin:0 auto 16px; color:#1A1A1A; } /* UBAH: KE ITEM */
-        .eq-empty-title { font-size:14px; font-weight:600; color:#1A1A1A; margin:0 0 6px; } /* UBAH: KE ITEM */
-        .eq-empty-desc  { font-size:12px; color:#1A1A1A; margin:0; } /* UBAH: KE ITEM */
+        .eq-empty       { display:flex; flex-direction:column; align-items:center; justify-content:center; min-height:340px; text-align:center; padding:40px 20px; position:sticky; left:0; }
+        .eq-empty-icon  { width:56px; height:56px; background:#F5F3EE; border:1.5px solid #E5E2D8; border-radius:14px; display:flex; align-items:center; justify-content:center; margin:0 auto 16px; color:#1A1A1A; }
+        .eq-empty-title { font-size:14px; font-weight:600; color:#1A1A1A; margin:0 0 6px; }
+        .eq-empty-desc  { font-size:12px; color:#1A1A1A; margin:0; }
         .eq-spinner     { animation: eq-spin 1s linear infinite; }
 
-        .action-btn           { padding:6px; border-radius:7px; cursor:pointer; background:#F5F3EE; border:1.5px solid #E5E2D8; color:#1A1A1A; transition:0.2s; } /* UBAH: KE ITEM */
+        .action-btn           { padding:6px; border-radius:7px; cursor:pointer; background:#F5F3EE; border:1.5px solid #E5E2D8; color:#1A1A1A; transition:0.2s; }
         .action-btn:hover         { background:#EDEAE3; color:#1A1A1A; border-color:#C8C0B0; }
         .action-btn.delete:hover  { background:rgba(220,60,60,0.07); border-color:rgba(220,60,60,0.2); color:#DC3C3C; }
         .action-btn.notify:hover  { background:rgba(34,160,100,0.07); border-color:rgba(34,160,100,0.2); color:#22A064; }
         .action-btn:disabled      { opacity:0.4; cursor:not-allowed; }
 
-        .doc-btn       { padding:5px 11px; font-size:11px; font-weight:500; border-radius:7px; cursor:pointer; display:inline-flex; align-items:center; gap:6px; transition:0.2s; border:1.5px solid #E5E2D8; font-family:inherit; background:#F5F3EE; color:#1A1A1A; } /* UBAH: KE ITEM */
+        .doc-btn       { padding:5px 11px; font-size:11px; font-weight:500; border-radius:7px; cursor:pointer; display:inline-flex; align-items:center; gap:6px; transition:0.2s; border:1.5px solid #E5E2D8; font-family:inherit; background:#F5F3EE; color:#1A1A1A; }
         .doc-btn:hover { background:rgba(240,165,0,0.08); border-color:rgba(240,165,0,0.25); color:#C87A00; }
 
-        /* Pagination — shared style */
         .pag-bar  { padding:10px 12px; border-top:1px solid #F0EDE4; background:#FAFAF7; display:flex; align-items:center; justify-content:space-between; gap:8px; }
-        .pag-info { font-size:10px; color:#1A1A1A; font-family:monospace; white-space:nowrap; } /* UBAH: KE ITEM */
+        .pag-info { font-size:10px; color:#1A1A1A; font-family:monospace; white-space:nowrap; }
         .pag-btns { display:flex; gap:6px; }
-        .pag-btn  { padding:5px 10px; font-size:11px; font-weight:500; border-radius:7px; background:#FFFFFF; border:1.5px solid #E5E2D8; color:#1A1A1A; cursor:pointer; display:flex; align-items:center; gap:3px; transition:0.15s; font-family:monospace; } /* UBAH: KE ITEM */
+        .pag-btn  { padding:5px 10px; font-size:11px; font-weight:500; border-radius:7px; background:#FFFFFF; border:1.5px solid #E5E2D8; color:#1A1A1A; cursor:pointer; display:flex; align-items:center; gap:3px; transition:0.15s; font-family:monospace; }
         .pag-btn:hover:not(:disabled) { background:rgba(240,165,0,0.07); border-color:rgba(240,165,0,0.25); color:#C87A00; }
         .pag-btn:disabled { opacity:0.35; cursor:not-allowed; }
 
         .modal-overlay  { position:fixed; inset:0; background:rgba(0,0,0,0.25); backdrop-filter:blur(6px); display:flex; align-items:center; justify-content:center; z-index:100; padding:20px; overflow-y:auto; }
         .modal-content  { background:#FFFFFF; border:1.5px solid #EAE7DF; border-radius:16px; width:100%; max-width:560px; padding:24px; box-shadow:0 20px 50px rgba(0,0,0,0.1); animation:eq-fadeup 0.2s ease-out; margin:auto; max-height:90vh; overflow-y:auto; }
         .modal-title     { font-size:16px; font-weight:700; color:#1A1A1A; margin-bottom:4px; }
-        .modal-subtitle { font-size:12px; color:#1A1A1A; margin-bottom:20px; } /* UBAH: KE ITEM */
-        .modal-label    { display:block; font-size:11px; font-weight:600; color:#1A1A1A; text-transform:uppercase; letter-spacing:0.08em; margin-bottom:6px; } /* UBAH: KE ITEM */
-        .modal-btn-cancel { flex:1; padding:11px; background:#F5F3EE; border:1.5px solid #E5E2D8; border-radius:10px; font-family:inherit; font-size:13px; font-weight:500; color:#1A1A1A; cursor:pointer; transition:0.15s; } /* UBAH: KE ITEM */
+        .modal-subtitle { font-size:12px; color:#1A1A1A; margin-bottom:20px; }
+        .modal-label    { display:block; font-size:11px; font-weight:600; color:#1A1A1A; text-transform:uppercase; letter-spacing:0.08em; margin-bottom:6px; }
+        .modal-btn-cancel { flex:1; padding:11px; background:#F5F3EE; border:1.5px solid #E5E2D8; border-radius:10px; font-family:inherit; font-size:13px; font-weight:500; color:#1A1A1A; cursor:pointer; transition:0.15s; }
         .modal-btn-cancel:hover:not(:disabled) { background:#EDEAE3; color:#1A1A1A; }
         .modal-btn-cancel:disabled { opacity:0.4; cursor:not-allowed; }
         .modal-btn-submit { flex:1; padding:11px; background:#F0A500; border:none; border-radius:10px; font-family:inherit; font-size:13px; font-weight:600; color:#1A1A1A; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:6px; transition:0.2s; box-shadow:0 4px 14px rgba(240,165,0,0.2); }
         .modal-btn-submit:hover:not(:disabled) { background:#E09800; transform:translateY(-1px); }
         .modal-btn-submit:disabled { opacity:0.5; cursor:not-allowed; }
+
+        /* ─── AKSI COLUMN: sticky hanya di desktop ≥768px ─── */
+        .aksi-th, .aksi-td {
+          text-align: center;
+          vertical-align: middle;
+        }
+        @media (min-width: 768px) {
+          .aksi-th {
+            position: sticky;
+            right: 0;
+            z-index: 20;
+            background: #FAFAF7;
+            box-shadow: -2px 0 5px rgba(0,0,0,0.03);
+          }
+          .aksi-td {
+            position: sticky;
+            right: 0;
+            z-index: 10;
+            box-shadow: -2px 0 5px rgba(0,0,0,0.02);
+          }
+        }
       `}</style>
 
       <div className="eq-root" style={{ background: "#FAFAF8", minHeight: "100vh" }}>
@@ -724,8 +712,7 @@ export default function EquipmentsPage() {
                   </div>
                   {selectedCompany && <span className="eq-selected-tag">{selectedCompany.name}</span>}
                   <input type="file" ref={fileInputRef} accept=".xlsx,.xls,.csv" onChange={handleFileUpload} style={{ display: "none" }} />
-                  
-                  {/* BUTTONS UNTUK ADMIN */}
+
                   {userRole === "SUPERADMIN" && (
                     <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
                       <button className="eq-tool-btn amber" onClick={() => setIsAddModalOpen(true)} disabled={!selectedCompanyId}>
@@ -734,46 +721,25 @@ export default function EquipmentsPage() {
                       <button className="eq-tool-btn amber" onClick={() => fileInputRef.current?.click()} disabled={!selectedCompanyId || isUploading}>
                         {isUploading ? <Loader2 size={13} className="eq-spinner" /> : <FileUp size={13} />} Import File
                       </button>
-                      
-                      {/* PELURU 1: ALERT EXPIRED (NAGIH) */}
-                      <button 
-                        className="eq-tool-btn red" 
-                        onClick={() => handleAdminNotify('expired')} 
-                        disabled={!selectedCompanyId || isNotifyingBulkAll}
-                      >
+                      <button className="eq-tool-btn red" onClick={() => handleAdminNotify('expired')} disabled={!selectedCompanyId || isNotifyingBulkAll}>
                         {isNotifyingBulkAll ? <Loader2 size={13} className="eq-spinner" /> : <MailWarning size={13} />}
                         {selectedEqIds.length > 0 ? `Kirim ${selectedEqIds.length} Peringatan` : "Alert Expired"}
                       </button>
-
-                      {/* PELURU 2: NOTIF DOKUMEN READY (INFO SELESAI) */}
-                      <button 
-                        className="eq-tool-btn green" 
-                        onClick={() => handleAdminNotify('ready')} 
-                        disabled={!selectedCompanyId || isNotifyingBulkAll}
-                      >
+                      <button className="eq-tool-btn green" onClick={() => handleAdminNotify('ready')} disabled={!selectedCompanyId || isNotifyingBulkAll}>
                         {isNotifyingBulkAll ? <Loader2 size={13} className="eq-spinner" /> : <FileCheck size={13} />}
                         {selectedEqIds.length > 0 ? `Notif ${selectedEqIds.length} Dokumen` : "Notif Dok Ready"}
                       </button>
                     </div>
                   )}
 
-                  {/* BUTTONS UNTUK KLIEN (USER BIASA) */}
                   {userRole !== "SUPERADMIN" && (
                     <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
-                      <button 
-                        className="eq-tool-btn amber" 
-                        onClick={() => handleClientRequest('inspeksi')} 
-                        disabled={selectedEqIds.length === 0 || isSubmittingRequest}
-                      >
-                        {isSubmittingRequest ? <Loader2 size={13} className="eq-spinner" /> : <Send size={13} />} 
+                      <button className="eq-tool-btn amber" onClick={() => handleClientRequest('inspeksi')} disabled={selectedEqIds.length === 0 || isSubmittingRequest}>
+                        {isSubmittingRequest ? <Loader2 size={13} className="eq-spinner" /> : <Send size={13} />}
                         Request Inspeksi
                       </button>
-                      <button 
-                        className="eq-tool-btn amber" 
-                        onClick={() => handleClientRequest('dokumen')} 
-                        disabled={selectedEqIds.length === 0 || isSubmittingRequest}
-                      >
-                        {isSubmittingRequest ? <Loader2 size={13} className="eq-spinner" /> : <FileUp size={13} />} 
+                      <button className="eq-tool-btn amber" onClick={() => handleClientRequest('dokumen')} disabled={selectedEqIds.length === 0 || isSubmittingRequest}>
+                        {isSubmittingRequest ? <Loader2 size={13} className="eq-spinner" /> : <FileUp size={13} />}
                         Request Dokumen
                       </button>
                     </div>
@@ -818,7 +784,8 @@ export default function EquipmentsPage() {
                           <th>Tgl Kedaluwarsa</th>
                           <th>Status</th>
                           <th>Keterangan</th>
-                          <th style={{ textAlign: "center", position: "sticky", right: 0, zIndex: 20, background: "#FAFAF7", boxShadow: "-2px 0 5px rgba(0,0,0,0.03)" }}>Aksi</th>
+                          {/* ↓ Pakai class aksi-th — sticky hanya di desktop */}
+                          <th className="aksi-th" style={{ background: "#FAFAF7" }}>Aksi</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -827,8 +794,7 @@ export default function EquipmentsPage() {
                           const StatusIcon = status.icon;
                           const isSelected = selectedEqIds.includes(eq.id);
                           const hasDocs    = (eq.suket?.length ?? 0) > 0 || (eq.laporan?.length ?? 0) > 0;
-                          
-                          const stickyBg = isSelected ? "#FDFCF8" : "#FFFFFF";
+                          const stickyBg   = isSelected ? "#FDFCF8" : "#FFFFFF";
 
                           return (
                             <tr key={eq.id} style={{ background: isSelected ? "#FDFCF8" : "transparent" }}>
@@ -836,21 +802,17 @@ export default function EquipmentsPage() {
                                 <input type="checkbox" style={{ cursor: "pointer", accentColor: "#F0A500" }}
                                   checked={isSelected} onChange={() => toggleSelectEq(eq.id)} />
                               </td>
-                              
-                              <td className="sticky-col" style={{ 
-                                position: "sticky", 
-                                left: 40, 
-                                background: stickyBg, 
-                                zIndex: 10, 
+
+                              <td className="sticky-col" style={{
+                                position: "sticky", left: 40, background: stickyBg, zIndex: 10,
                                 boxShadow: "2px 0 5px rgba(0,0,0,0.02)",
-                                whiteSpace: "normal", 
-                                maxWidth: 220,        
-                                wordBreak: "break-word",
-                                lineHeight: 1.4
+                                whiteSpace: "normal", maxWidth: 220, wordBreak: "break-word", lineHeight: 1.4,
                               }}>
                                 <p className="eq-eq-name" onClick={() => { setActiveEq(eq); setDrawerOpen(true); }}>
                                   {eq.name}
-                                  {eq.name.toLowerCase() === 'lift' || eq.name.toLowerCase() === 'crane' ? ` - ${eq.area || eq.location || eq.serialNumber}` : ''}
+                                  {eq.name.toLowerCase() === 'lift' || eq.name.toLowerCase() === 'crane'
+                                    ? ` - ${eq.area || eq.location || eq.serialNumber}`
+                                    : ''}
                                 </p>
                               </td>
 
@@ -870,19 +832,14 @@ export default function EquipmentsPage() {
                                 </span>
                               </td>
 
-                              {/* KOLOM STATUS GANDA */}
                               <td>
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', alignItems: 'flex-start' }}>
-                                  
-                                  {/* Badge 1: Status Waktu (Aman/Warning/Expired) */}
                                   <span className={`eq-badge ${status.variant}`}>
                                     <StatusIcon size={10} />
                                     {status.label} ({status.days < 0 ? "Lewat" : `${status.days}hr`})
                                   </span>
-
-                                  {/* Badge 2: Status Manual dari Database */}
                                   {eq.isProsesDinas && (
-                                    <span className="eq-badge process" style={{ marginTop: 0 }}>
+                                    <span className="eq-badge process">
                                       <Clock size={10} /> Proses Dinas
                                     </span>
                                   )}
@@ -892,7 +849,9 @@ export default function EquipmentsPage() {
                               <td style={{ maxWidth: 200, overflow: "hidden", textOverflow: "ellipsis", color: "#1A1A1A", fontSize: 12 }}>
                                 {eq.description || "-"}
                               </td>
-                              <td className="sticky-col" style={{ textAlign: "center", verticalAlign: "middle", position: "sticky", right: 0, background: stickyBg, zIndex: 10, boxShadow: "-2px 0 5px rgba(0,0,0,0.02)" }}>
+
+                              {/* ↓ Pakai class aksi-td — sticky hanya di desktop */}
+                              <td className="aksi-td" style={{ background: stickyBg }}>
                                 <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
                                   <button onClick={() => { setActiveEq(eq); setDrawerOpen(true); }} className="doc-btn"
                                     style={{
