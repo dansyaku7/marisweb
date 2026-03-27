@@ -35,7 +35,7 @@ export default function LoginPage() {
     setIsLoading(true);
     setError(null);
     try {
-      const response = await fetch("/api/auth/forgot-password", { // Pastikan endpoint API sudah dibuat
+      const response = await fetch("/api/auth/login", { // Pastikan endpoint API sudah dibuat
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),
