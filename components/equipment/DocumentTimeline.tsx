@@ -1,17 +1,11 @@
 "use client";
 
 import React, { useState } from "react";
-import {
-  CheckCircle2, Clock, Download, Eye, Shield,
-  ChevronDown, ChevronUp, Plus, Trash2, Loader2
-} from "lucide-react";
+import { CheckCircle2, Clock, Download, Eye, Shield, ChevronDown, ChevronUp, Plus, Trash2, Loader2, Cloud, FileText, ExternalLink, Link as LinkIcon } from "lucide-react";
 import UploadForm from "./UploadForm";
 
 interface Suket {
-  id: string;
-  period: string;
-  fileUrl: string;
-  createdAt: string;
+  id: string; period: string; fileUrl: string; documentType?: "link" | "upload"; createdAt: string;
 }
 
 interface DocumentTimelineProps {
@@ -19,144 +13,86 @@ interface DocumentTimelineProps {
   userRole: string | null;
   isSubmitting: boolean;
   isDeletingId?: string | null;
+  title?: string;          // Baru
+  emptyText?: string;      // Baru
+  buttonText?: string;     // Baru
+  forcedMode?: "link" | "upload"; // Baru
   onUpload: (data: { mode: "link" | "upload"; url?: string; file?: File; period?: string }) => void;
   onPreview: (url: string) => void;
   onDelete?: (id: string) => void;
 }
 
+const isCloudLink = (url: string, type?: string) => {
+  if (type) return type === "link";
+  const u = url.toLowerCase();
+  return u.includes("drive.google.com") || u.includes("docs.google.com") || u.includes("dropbox.com") || u.includes("sharepoint");
+};
+
 export default function DocumentTimeline({
-  suketList,
-  userRole,
-  isSubmitting,
-  isDeletingId,
-  onUpload,
-  onPreview,
-  onDelete,
+  suketList, userRole, isSubmitting, isDeletingId,
+  title = "Surat Keterangan",
+  emptyText = "Belum ada suket yang dilampirkan.",
+  buttonText = "Upload Suket Baru",
+  forcedMode,
+  onUpload, onPreview, onDelete,
 }: DocumentTimelineProps) {
   const [showAll, setShowAll] = useState(false);
   const [showUploadForm, setShowUploadForm] = useState(false);
 
-  // Yang terbaru = index 0 (aktif), sisanya history
-  const sorted = [...suketList].sort(
-    (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-  );
+  const sorted = [...suketList].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
   const active = sorted[0];
   const history = sorted.slice(1);
   const visibleHistory = showAll ? history : history.slice(0, 2);
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-
-      {/* ── Header section ── */}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
           <div style={{
-            width: 28, height: 28,
-            background: "rgba(240,165,0,0.08)",
-            border: "1.5px solid rgba(240,165,0,0.18)",
-            borderRadius: 8,
-            display: "flex", alignItems: "center", justifyContent: "center",
-            color: "#C87A00",
+            width: 28, height: 28, background: "rgba(240,165,0,0.08)", border: "1.5px solid rgba(240,165,0,0.18)",
+            borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center", color: "#C87A00",
           }}>
-            <Shield size={14} />
+            {forcedMode === "link" ? <LinkIcon size={14} /> : <Shield size={14} />}
           </div>
-          <span style={{ fontSize: 13, fontWeight: 600, color: "#555550" }}>
-            Surat Keterangan
-          </span>
+          <span style={{ fontSize: 13, fontWeight: 600, color: "#555550" }}>{title}</span>
         </div>
 
-        {/* Tombol upload hanya untuk SUPERADMIN */}
         {userRole === "SUPERADMIN" && (
-          <button
-            onClick={() => setShowUploadForm((v) => !v)}
-            style={{
-              fontSize: 11, fontWeight: 500,
-              padding: "5px 11px", borderRadius: 7,
-              background: showUploadForm ? "rgba(240,165,0,0.08)" : "#F5F3EE",
-              border: `1.5px solid ${showUploadForm ? "rgba(240,165,0,0.25)" : "#E5E2D8"}`,
-              color: showUploadForm ? "#C87A00" : "#888880",
-              cursor: "pointer", display: "flex", alignItems: "center", gap: 5,
-              fontFamily: "inherit", transition: "0.15s",
-            }}
-          >
-            <Plus size={11} />
-            Upload Suket Baru
+          <button onClick={() => setShowUploadForm((v) => !v)} style={{
+            fontSize: 11, fontWeight: 500, padding: "5px 11px", borderRadius: 7,
+            background: showUploadForm ? "rgba(240,165,0,0.08)" : "#F5F3EE",
+            border: `1.5px solid ${showUploadForm ? "rgba(240,165,0,0.25)" : "#E5E2D8"}`,
+            color: showUploadForm ? "#C87A00" : "#888880", cursor: "pointer", display: "flex", alignItems: "center", gap: 5,
+            fontFamily: "inherit", transition: "0.15s",
+          }}>
+            <Plus size={11} /> {buttonText}
           </button>
         )}
       </div>
 
-      {/* ── Upload form (toggle) ── */}
       {showUploadForm && userRole === "SUPERADMIN" && (
         <UploadForm
-          label="Upload Suket Baru"
-          showPeriod
-          periodPlaceholder="Periode suket (cth: 2025-2026)"
-          isSubmitting={isSubmitting}
-          onSubmit={(data) => {
-            onUpload(data);
-            setShowUploadForm(false);
-          }}
+          label={buttonText} showPeriod periodPlaceholder="Periode (cth: 2025-2026)"
+          isSubmitting={isSubmitting} forcedMode={forcedMode}
+          onSubmit={(data) => { onUpload(data); setShowUploadForm(false); }}
         />
       )}
 
-      {/* ── Empty state ── */}
       {suketList.length === 0 ? (
-        <div style={{
-          textAlign: "center", padding: "24px 16px",
-          background: "#FAFAF7", border: "1.5px dashed #E5E2D8",
-          borderRadius: 12, color: "#AAAAAA", fontSize: 12,
-        }}>
-          Belum ada suket yang dilampirkan.
+        <div style={{ textAlign: "center", padding: "24px 16px", background: "#FAFAF7", border: "1.5px dashed #E5E2D8", borderRadius: 12, color: "#AAAAAA", fontSize: 12 }}>
+          {emptyText}
         </div>
       ) : (
         <div style={{ position: "relative" }}>
-
-          {/* Garis timeline vertikal */}
-          <div style={{
-            position: "absolute", left: 11, top: 24, bottom: 24,
-            width: 1.5, background: "linear-gradient(180deg, #F0A500 0%, #E5E2D8 100%)",
-            opacity: 0.3,
-          }} />
-
+          <div style={{ position: "absolute", left: 11, top: 24, bottom: 24, width: 1.5, background: "linear-gradient(180deg, #F0A500 0%, #E5E2D8 100%)", opacity: 0.3 }} />
           <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
-
-            {/* ── AKTIF (terbaru) ── */}
-            {active && (
-              <TimelineItem
-                suket={active}
-                isActive
-                userRole={userRole}
-                isDeleting={isDeletingId === active.id}
-                onPreview={onPreview}
-                onDelete={onDelete}
-              />
-            )}
-
-            {/* ── HISTORY ── */}
-            {visibleHistory.map((s) => (
-              <TimelineItem 
-                key={s.id} 
-                suket={s} 
-                isActive={false} 
-                userRole={userRole}
-                isDeleting={isDeletingId === s.id}
-                onPreview={onPreview} 
-                onDelete={onDelete}
-              />
-            ))}
-
-            {/* Show more / less */}
+            {active && <TimelineItem suket={active} isActive userRole={userRole} isDeleting={isDeletingId === active.id} onPreview={onPreview} onDelete={onDelete} />}
+            {visibleHistory.map((s) => <TimelineItem key={s.id} suket={s} isActive={false} userRole={userRole} isDeleting={isDeletingId === s.id} onPreview={onPreview} onDelete={onDelete} />)}
             {history.length > 2 && (
-              <button
-                onClick={() => setShowAll((v) => !v)}
-                style={{
-                  marginLeft: 28, marginTop: 4,
-                  fontSize: 11, fontWeight: 500, color: "#C87A00",
-                  background: "none", border: "none", cursor: "pointer",
-                  display: "flex", alignItems: "center", gap: 4,
-                  fontFamily: "inherit", padding: 0,
-                }}
-              >
+              <button onClick={() => setShowAll((v) => !v)} style={{
+                marginLeft: 28, marginTop: 4, fontSize: 11, fontWeight: 500, color: "#C87A00",
+                background: "none", border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: 4, fontFamily: "inherit", padding: 0,
+              }}>
                 {showAll ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
                 {showAll ? "Sembunyikan" : `Lihat ${history.length - 2} suket lainnya`}
               </button>
@@ -168,101 +104,42 @@ export default function DocumentTimeline({
   );
 }
 
-// ── Sub-komponen item timeline ──
-function TimelineItem({
-  suket,
-  isActive,
-  userRole,
-  isDeleting,
-  onPreview,
-  onDelete,
-}: {
-  suket: Suket;
-  isActive: boolean;
-  userRole: string | null;
-  isDeleting?: boolean;
-  onPreview: (url: string) => void;
-  onDelete?: (id: string) => void;
-}) {
+function TimelineItem({ suket, isActive, userRole, isDeleting, onPreview, onDelete }: any) {
+  const isLink = isCloudLink(suket.fileUrl, suket.documentType);
+
   return (
     <div style={{ display: "flex", gap: 12, paddingBottom: 12, position: "relative", opacity: isDeleting ? 0.6 : 1, transition: "opacity 0.2s" }}>
-
-      {/* Dot timeline */}
       <div style={{
         width: 22, height: 22, borderRadius: "50%", flexShrink: 0, marginTop: 2,
-        background: isActive ? "#F0A500" : "#F5F3EE",
-        border: `2px solid ${isActive ? "#F0A500" : "#E5E2D8"}`,
+        background: isActive ? "#F0A500" : "#F5F3EE", border: `2px solid ${isActive ? "#F0A500" : "#E5E2D8"}`,
         display: "flex", alignItems: "center", justifyContent: "center",
-        boxShadow: isActive ? "0 0 0 4px rgba(240,165,0,0.12)" : "none",
-        zIndex: 1,
+        boxShadow: isActive ? "0 0 0 4px rgba(240,165,0,0.12)" : "none", zIndex: 1,
       }}>
-        {isActive
-          ? <CheckCircle2 size={11} color="#1A1A1A" />
-          : <Clock size={10} color="#BBBBBB" />
-        }
+        {isActive ? <CheckCircle2 size={11} color="#1A1A1A" /> : <Clock size={10} color="#BBBBBB" />}
       </div>
-
-      {/* Konten */}
       <div style={{
-        flex: 1,
-        background: isActive ? "rgba(240,165,0,0.04)" : "#FAFAF7",
-        border: `1.5px solid ${isActive ? "rgba(240,165,0,0.2)" : "#EAE7DF"}`,
-        borderRadius: 10, padding: "10px 14px",
-        display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8,
+        flex: 1, background: isActive ? "rgba(240,165,0,0.04)" : "#FAFAF7", border: `1.5px solid ${isActive ? "rgba(240,165,0,0.2)" : "#EAE7DF"}`,
+        borderRadius: 10, padding: "10px 14px", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8,
       }}>
         <div>
-          <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 3 }}>
-            <span style={{ fontSize: 13, fontWeight: 600, color: isActive ? "#C87A00" : "#555550" }}>
-              Periode {suket.period}
-            </span>
-            {isActive && (
-              <span style={{
-                fontSize: 9, fontWeight: 600, padding: "2px 7px",
-                background: "rgba(240,165,0,0.12)", border: "1px solid rgba(240,165,0,0.25)",
-                borderRadius: 999, color: "#C87A00", textTransform: "uppercase",
-                letterSpacing: "0.08em",
-              }}>
-                Aktif
-              </span>
+          <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 3, flexWrap: "wrap" }}>
+            <span style={{ fontSize: 13, fontWeight: 600, color: isActive ? "#C87A00" : "#555550" }}>Periode {suket.period}</span>
+            {isLink ? (
+              <span style={{ fontSize: 9, fontWeight: 600, padding: "2px 6px", background: "rgba(59,130,246,0.1)", border: "1px solid rgba(59,130,246,0.2)", borderRadius: 4, color: "#3B82F6", display: "flex", alignItems: "center", gap: 3 }}><Cloud size={9} /> Link Cloud</span>
+            ) : (
+              <span style={{ fontSize: 9, fontWeight: 600, padding: "2px 6px", background: "#E5E2D8", border: "1px solid #D1CDBC", borderRadius: 4, color: "#555550", display: "flex", alignItems: "center", gap: 3 }}><FileText size={9} /> File</span>
             )}
+            {isActive && <span style={{ fontSize: 9, fontWeight: 600, padding: "2px 7px", background: "rgba(240,165,0,0.12)", border: "1px solid rgba(240,165,0,0.25)", borderRadius: 999, color: "#C87A00", textTransform: "uppercase", letterSpacing: "0.08em" }}>Aktif</span>}
           </div>
-          <span style={{ fontSize: 10, color: "#BBBBBB", fontFamily: "monospace" }}>
-            {new Date(suket.createdAt).toLocaleDateString("id-ID", {
-              day: "2-digit", month: "short", year: "numeric",
-            })}
-          </span>
+          <span style={{ fontSize: 10, color: "#BBBBBB", fontFamily: "monospace" }}>{new Date(suket.createdAt).toLocaleDateString("id-ID", { day: "2-digit", month: "short", year: "numeric" })}</span>
         </div>
-
-        {/* Aksi */}
         <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
           <ActionBtn onClick={() => onPreview(suket.fileUrl)} icon={<Eye size={12} />} label="Preview" />
-          <ActionBtn href={suket.fileUrl} icon={<Download size={12} />} label="Unduh" />
-          
-          {/* Tombol Hapus (Superadmin) */}
+          {isLink ? <ActionBtn href={suket.fileUrl} icon={<ExternalLink size={12} />} label="Buka Link" /> : <ActionBtn href={suket.fileUrl} icon={<Download size={12} />} label="Unduh" />}
           {userRole === "SUPERADMIN" && onDelete && (
-            <button
-              onClick={() => onDelete(suket.id)}
-              disabled={isDeleting}
-              style={{
-                padding: "6px 8px", borderRadius: 7,
-                background: "rgba(220,60,60,0.05)", border: "1.5px solid rgba(220,60,60,0.12)",
-                color: "#DC3C3C", cursor: isDeleting ? "not-allowed" : "pointer",
-                display: "flex", alignItems: "center", transition: "0.15s",
-              }}
-              onMouseEnter={(e) => {
-                if (!isDeleting) {
-                  (e.currentTarget as HTMLElement).style.background = "rgba(220,60,60,0.1)";
-                  (e.currentTarget as HTMLElement).style.borderColor = "rgba(220,60,60,0.3)";
-                }
-              }}
-              onMouseLeave={(e) => {
-                if (!isDeleting) {
-                  (e.currentTarget as HTMLElement).style.background = "rgba(220,60,60,0.05)";
-                  (e.currentTarget as HTMLElement).style.borderColor = "rgba(220,60,60,0.12)";
-                }
-              }}
-              title="Hapus Dokumen"
-            >
+            <button onClick={() => onDelete(suket.id)} disabled={isDeleting} title="Hapus Dokumen" style={{
+              padding: "6px 8px", borderRadius: 7, background: "rgba(220,60,60,0.05)", border: "1.5px solid rgba(220,60,60,0.12)", color: "#DC3C3C", cursor: isDeleting ? "not-allowed" : "pointer", display: "flex", alignItems: "center", transition: "0.15s"
+            }}>
               {isDeleting ? <Loader2 size={13} style={{ animation: "spin 1s linear infinite" }} /> : <Trash2 size={13} />}
             </button>
           )}
@@ -272,57 +149,10 @@ function TimelineItem({
   );
 }
 
-function ActionBtn({
-  onClick, href, icon, label,
-}: {
-  onClick?: () => void;
-  href?: string;
-  icon: React.ReactNode;
-  label: string;
-}) {
+function ActionBtn({ onClick, href, icon, label }: any) {
   const base: React.CSSProperties = {
-    fontSize: 11, fontWeight: 500,
-    padding: "4px 10px", borderRadius: 7,
-    background: "#F5F3EE", border: "1.5px solid #E5E2D8",
-    color: "#888880", cursor: "pointer",
-    display: "flex", alignItems: "center", gap: 5,
-    fontFamily: "inherit", textDecoration: "none",
-    transition: "0.15s",
+    fontSize: 11, fontWeight: 500, padding: "4px 10px", borderRadius: 7, background: "#F5F3EE", border: "1.5px solid #E5E2D8", color: "#888880", cursor: "pointer", display: "flex", alignItems: "center", gap: 5, fontFamily: "inherit", textDecoration: "none", transition: "0.15s",
   };
-
-  if (href) {
-    return (
-      <a href={href} target="_blank" rel="noreferrer" style={base}
-        onMouseEnter={(e) => {
-          (e.currentTarget as HTMLElement).style.background = "rgba(240,165,0,0.08)";
-          (e.currentTarget as HTMLElement).style.color = "#C87A00";
-          (e.currentTarget as HTMLElement).style.borderColor = "rgba(240,165,0,0.25)";
-        }}
-        onMouseLeave={(e) => {
-          (e.currentTarget as HTMLElement).style.background = "#F5F3EE";
-          (e.currentTarget as HTMLElement).style.color = "#888880";
-          (e.currentTarget as HTMLElement).style.borderColor = "#E5E2D8";
-        }}
-      >
-        {icon} <span style={{ display: "none" }} className="sm-label">{label}</span>
-      </a>
-    );
-  }
-
-  return (
-    <button onClick={onClick} style={base}
-      onMouseEnter={(e) => {
-        (e.currentTarget as HTMLElement).style.background = "rgba(240,165,0,0.08)";
-        (e.currentTarget as HTMLElement).style.color = "#C87A00";
-        (e.currentTarget as HTMLElement).style.borderColor = "rgba(240,165,0,0.25)";
-      }}
-      onMouseLeave={(e) => {
-        (e.currentTarget as HTMLElement).style.background = "#F5F3EE";
-        (e.currentTarget as HTMLElement).style.color = "#888880";
-        (e.currentTarget as HTMLElement).style.borderColor = "#E5E2D8";
-      }}
-    >
-      {icon} <span style={{ display: "none" }} className="sm-label">{label}</span>
-    </button>
-  );
+  if (href) return <a href={href} target="_blank" rel="noreferrer" style={base}>{icon} <span style={{ display: "none" }} className="sm-label">{label}</span></a>;
+  return <button onClick={onClick} style={base}>{icon} <span style={{ display: "none" }} className="sm-label">{label}</span></button>;
 }

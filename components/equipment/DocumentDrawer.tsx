@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useEffect, useRef, useState } from "react";
-import { X, FolderOpen, AlertTriangle, ShieldCheck, Clock, FileUp, Loader2 } from "lucide-react";
+import React, { useEffect, useState } from "react";
+import { X, FolderOpen, AlertTriangle, ShieldCheck, Clock, FileUp, Cloud } from "lucide-react";
 import DocumentTimeline from "./DocumentTimeline";
 import LaporanSection from "./LaporanSection";
 
@@ -12,6 +12,7 @@ interface Suket {
   id: string;
   period: string;
   fileUrl: string;
+  documentType?: "link" | "upload";
   createdAt: string;
 }
 
@@ -19,6 +20,7 @@ interface Laporan {
   id: string;
   period: string;
   fileUrl: string;
+  documentType?: "link" | "upload";
   createdAt?: string;
 }
 
@@ -44,7 +46,16 @@ interface DocumentDrawerProps {
 }
 
 // ============================================================
-// LOADING OVERLAY — hanya nutup area drawer
+// HELPER
+// ============================================================
+const isCloudLink = (url: string, type?: string) => {
+  if (type) return type === "link";
+  const u = url.toLowerCase();
+  return u.includes("drive.google.com") || u.includes("docs.google.com") || u.includes("dropbox.com") || u.includes("sharepoint");
+};
+
+// ============================================================
+// LOADING OVERLAY
 // ============================================================
 function ProcessingOverlay({ isVisible }: { isVisible: boolean }) {
   const [loadingText, setLoadingText] = useState("Menyiapkan dokumen...");
@@ -70,7 +81,7 @@ function ProcessingOverlay({ isVisible }: { isVisible: boolean }) {
 
   return (
     <div style={{
-      position: "absolute", inset: 0, zIndex: 10,          // <-- absolute, bukan fixed
+      position: "absolute", inset: 0, zIndex: 10,
       background: "rgba(255, 255, 255, 0.95)",
       backdropFilter: "blur(5px)",
       display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
@@ -128,7 +139,7 @@ function PreviewModal({ url, onClose }: { url: string; onClose: () => void }) {
           display: "flex", justifyContent: "space-between", alignItems: "center",
           flexShrink: 0,
         }}>
-          <span style={{ fontSize: 12, color: "#1A1A1A", fontFamily: "monospace" }}>Preview Dokumen</span>
+          <span style={{ fontSize: 12, color: "#FFFFFF", fontFamily: "monospace" }}>Preview Dokumen</span>
           <div style={{ display: "flex", gap: 8 }}>
             <a href={url} target="_blank" rel="noreferrer"
               style={{
@@ -141,7 +152,7 @@ function PreviewModal({ url, onClose }: { url: string; onClose: () => void }) {
             <button onClick={onClose}
               style={{
                 padding: "5px 10px", borderRadius: 7, background: "#2A2A2A",
-                border: "1px solid #3A3A3A", color: "#1A1A1A", cursor: "pointer", display: "flex", alignItems: "center",
+                border: "1px solid #3A3A3A", color: "#FFFFFF", cursor: "pointer", display: "flex", alignItems: "center",
               }}><X size={14} /></button>
           </div>
         </div>
@@ -216,7 +227,11 @@ export default function DocumentDrawer({
       }
       const res  = await fetch(`/api/equipments/${equipment.id}/suket`, {
         method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ period: data.period, fileUrl: finalUrl }),
+        body: JSON.stringify({ 
+          period: data.period, 
+          fileUrl: finalUrl,
+          documentType: data.mode 
+        }),
       });
       if (!res.ok) throw new Error("Gagal menyimpan suket.");
       setSuccessMsg("Suket berhasil disimpan.");
@@ -252,7 +267,11 @@ export default function DocumentDrawer({
       }
       const res  = await fetch(`/api/equipments/${equipment.id}/laporan`, {
         method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ period: data.period, fileUrl: finalUrl }),
+        body: JSON.stringify({ 
+          period: data.period, 
+          fileUrl: finalUrl,
+          documentType: data.mode 
+        }),
       });
       if (!res.ok) throw new Error("Gagal menyimpan laporan.");
       setSuccessMsg("Laporan berhasil disimpan.");
@@ -292,9 +311,15 @@ export default function DocumentDrawer({
   const laporanList = equipment.laporan ?? [];
   const hasDocs     = suketList.length > 0 || laporanList.length > 0;
 
+  // Pisahkan data untuk dirender ke masing-masing kategori
+  const suketUploads = suketList.filter(s => !isCloudLink(s.fileUrl, s.documentType));
+  const suketLinks   = suketList.filter(s => isCloudLink(s.fileUrl, s.documentType));
+  
+  const laporanUploads = laporanList.filter(l => !isCloudLink(l.fileUrl, l.documentType));
+  const laporanLinks   = laporanList.filter(l => isCloudLink(l.fileUrl, l.documentType));
+
   return (
     <>
-      {/* Backdrop — tetap full screen */}
       <div
         onClick={handleOverlayClick}
         style={{
@@ -304,7 +329,6 @@ export default function DocumentDrawer({
         }}
       />
 
-      {/* Drawer — position: relative supaya overlay absolute terkurung di sini */}
       <div style={{
         position: "fixed", top: 0, right: 0, bottom: 0, zIndex: 201,
         width: "100%", maxWidth: 480,
@@ -312,12 +336,9 @@ export default function DocumentDrawer({
         display: "flex", flexDirection: "column",
         boxShadow: "-8px 0 40px rgba(0,0,0,0.1)",
         animation: "drawerSlideIn 0.25s cubic-bezier(0.32,0.72,0,1)",
-        // ↓ Dua baris ini yang bikin overlay terkurung di dalam drawer
-        position: "fixed" as any,
         overflow: "hidden",
       }}>
 
-        {/* Loading overlay — sekarang absolute, cuma nutup area drawer */}
         <ProcessingOverlay isVisible={isProcessing} />
 
         {/* Header */}
@@ -385,27 +406,81 @@ export default function DocumentDrawer({
           )}
         </div>
 
-        {/* Content */}
-        <div style={{ flex: 1, overflowY: "auto", padding: "20px 24px", display: "flex", flexDirection: "column", gap: 28 }}>
-          <DocumentTimeline
-            suketList={suketList}
-            userRole={userRole}
-            isSubmitting={isSubmittingSuket}
-            isDeletingId={isDeletingSuketId}
-            onUpload={handleUploadSuket}
-            onPreview={setPreviewUrl}
-            onDelete={handleDeleteSuket}
-          />
-          <div style={{ height: 1, background: "linear-gradient(90deg, #F0A500 0%, transparent 60%)", opacity: 0.15 }} />
-          <LaporanSection
-            laporanList={laporanList}
-            userRole={userRole}
-            isSubmitting={isSubmittingLaporan}
-            isDeletingId={isDeletingLaporanId}
-            onUpload={handleUploadLaporan}
-            onPreview={setPreviewUrl}
-            onDelete={handleDeleteLaporan}
-          />
+        {/* Content Area Terpisah */}
+        <div style={{ flex: 1, overflowY: "auto", padding: "24px", display: "flex", flexDirection: "column", gap: 36 }}>
+          
+          {/* GROUP 1: BERKAS FISIK (UPLOAD) */}
+          <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
+            <h4 style={{ fontSize: 11, fontWeight: 700, color: "#AAAAAA", textTransform: "uppercase", letterSpacing: "0.12em", margin: "0 0 -12px 0", display: "flex", alignItems: "center", gap: 6 }}>
+              <FolderOpen size={13} /> Dokumen Berkas Fisik (Upload)
+            </h4>
+            
+            <DocumentTimeline
+              suketList={suketUploads}
+              title="Surat Keterangan (File)"
+              emptyText="Belum ada file suket yang diupload."
+              buttonText="Upload File Suket"
+              forcedMode="upload"
+              userRole={userRole}
+              isSubmitting={isSubmittingSuket}
+              isDeletingId={isDeletingSuketId}
+              onUpload={handleUploadSuket}
+              onPreview={setPreviewUrl}
+              onDelete={handleDeleteSuket}
+            />
+            
+            <LaporanSection
+              laporanList={laporanUploads}
+              title="Laporan Tahunan (File)"
+              emptyText="Belum ada file laporan yang diupload."
+              buttonText="Upload File Laporan"
+              forcedMode="upload"
+              userRole={userRole}
+              isSubmitting={isSubmittingLaporan}
+              isDeletingId={isDeletingLaporanId}
+              onUpload={handleUploadLaporan}
+              onPreview={setPreviewUrl}
+              onDelete={handleDeleteLaporan}
+            />
+          </div>
+
+          <div style={{ height: 1.5, background: "linear-gradient(90deg, #EAE7DF 0%, transparent 80%)", opacity: 0.6 }} />
+
+          {/* GROUP 2: TAUTAN CLOUD (LINK) */}
+          <div style={{ display: "flex", flexDirection: "column", gap: 24, paddingBottom: 12 }}>
+            <h4 style={{ fontSize: 11, fontWeight: 700, color: "#AAAAAA", textTransform: "uppercase", letterSpacing: "0.12em", margin: "0 0 -12px 0", display: "flex", alignItems: "center", gap: 6 }}>
+              <Cloud size={13} /> Tautan Dokumen Cloud
+            </h4>
+            
+            <DocumentTimeline
+              suketList={suketLinks}
+              title="Surat Keterangan (Tautan)"
+              emptyText="Belum ada tautan suket cloud."
+              buttonText="Tambah Link Suket"
+              forcedMode="link"
+              userRole={userRole}
+              isSubmitting={isSubmittingSuket}
+              isDeletingId={isDeletingSuketId}
+              onUpload={handleUploadSuket}
+              onPreview={setPreviewUrl}
+              onDelete={handleDeleteSuket}
+            />
+            
+            <LaporanSection
+              laporanList={laporanLinks}
+              title="Laporan Tahunan (Tautan)"
+              emptyText="Belum ada tautan laporan cloud."
+              buttonText="Tambah Link Laporan"
+              forcedMode="link"
+              userRole={userRole}
+              isSubmitting={isSubmittingLaporan}
+              isDeletingId={isDeletingLaporanId}
+              onUpload={handleUploadLaporan}
+              onPreview={setPreviewUrl}
+              onDelete={handleDeleteLaporan}
+            />
+          </div>
+
         </div>
 
         {/* Footer */}
