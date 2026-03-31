@@ -109,6 +109,9 @@ export default function EquipmentsPage() {
   const [isNotifyingBulkAll, setIsNotifyingBulkAll] = useState(false);
   const [selectedEqIds, setSelectedEqIds]           = useState<string[]>([]);
   const [deletingId, setDeletingId]                 = useState<string | null>(null);
+  
+  // Bulk Actions
+  const [isBulkLoading, setIsBulkLoading] = useState(false);
 
   // Client Request State
   const [isSubmittingRequest, setIsSubmittingRequest] = useState(false);
@@ -157,6 +160,86 @@ export default function EquipmentsPage() {
       setStatusMsg({ type: "error", text: err.message });
     } finally {
       setIsLoadingEq(false);
+    }
+  };
+
+  // ── Bulk Actions ──
+  const handleBulkDinas = async () => {
+    if (selectedEqIds.length === 0) return;
+
+    // Cek status alat pertama yang dipilih untuk menentukan toggle aktif/nonaktif
+    const firstEq = equipments.find((eq) => eq.id === selectedEqIds[0]);
+    const targetStatus = !(firstEq?.isProsesDinas);
+
+    const ok = await confirm({
+      variant: "info",
+      title: targetStatus ? "Tandai Proses Dinas" : "Batal Proses Dinas",
+      description: `Ubah status menjadi ${targetStatus ? 'AKTIF' : 'NONAKTIF'} untuk ${selectedEqIds.length} alat terpilih?`,
+      confirmLabel: "Ya, Ubah",
+      cancelLabel: "Batal",
+    });
+    
+    if (!ok) return;
+
+    setIsBulkLoading(true); setStatusMsg(null);
+    try {
+      const res = await fetch("/api/equipments/bulk-action", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ 
+          action: 'toggle-dinas',
+          equipmentIds: selectedEqIds, 
+          isProsesDinas: targetStatus 
+        }),
+      });
+      
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || "Gagal update status.");
+      
+      setStatusMsg({ type: "success", text: data.message });
+      fetchEquipments(selectedCompanyId);
+      setSelectedEqIds([]);
+    } catch (err: any) {
+      setStatusMsg({ type: "error", text: err.message });
+    } finally {
+      setIsBulkLoading(false);
+    }
+  };
+
+  const handleBulkDelete = async () => {
+    if (selectedEqIds.length === 0) return;
+
+    const ok = await confirm({
+      variant: "danger",
+      title: "Hapus Massal Permanen",
+      description: `Anda yakin ingin menghapus ${selectedEqIds.length} alat beserta dokumennya? Tindakan ini tidak bisa dibatalkan.`,
+      confirmLabel: "Ya, Hapus Semua",
+      cancelLabel: "Batal",
+    });
+
+    if (!ok) return;
+
+    setIsBulkLoading(true); setStatusMsg(null);
+    try {
+      const res = await fetch("/api/equipments/bulk-action", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ 
+          action: 'delete',
+          equipmentIds: selectedEqIds 
+        }),
+      });
+      
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || "Gagal menghapus data.");
+      
+      setStatusMsg({ type: "success", text: data.message });
+      fetchEquipments(selectedCompanyId);
+      setSelectedEqIds([]);
+    } catch (err: any) {
+      setStatusMsg({ type: "error", text: err.message });
+    } finally {
+      setIsBulkLoading(false);
     }
   };
 
@@ -255,7 +338,7 @@ export default function EquipmentsPage() {
     XLSX.writeFile(wb, "Template_Import_MTrack.xlsx");
   };
 
-  // ── Delete ──
+  // ── Delete Individual ──
   const handleDeleteEq = async (id: string, name: string) => {
     const ok = await confirm({
       variant: "danger", title: "Hapus Data Alat",
@@ -729,6 +812,21 @@ export default function EquipmentsPage() {
                         {isNotifyingBulkAll ? <Loader2 size={13} className="eq-spinner" /> : <FileCheck size={13} />}
                         {selectedEqIds.length > 0 ? `Notif ${selectedEqIds.length} Dokumen` : "Notif Dok Ready"}
                       </button>
+
+                      {/* --- TOMBOL BULK ACTION --- */}
+                      {selectedEqIds.length > 0 && (
+                        <>
+                          <div style={{ width: "1px", height: "20px", background: "#D1CDBC", margin: "0 4px" }} />
+                          <button className="eq-tool-btn amber" onClick={handleBulkDinas} disabled={isBulkLoading}>
+                            {isBulkLoading ? <Loader2 size={13} className="eq-spinner" /> : <Clock size={13} />}
+                            Proses Dinas ({selectedEqIds.length})
+                          </button>
+                          <button className="eq-tool-btn red" onClick={handleBulkDelete} disabled={isBulkLoading}>
+                            {isBulkLoading ? <Loader2 size={13} className="eq-spinner" /> : <Trash2 size={13} />}
+                            Hapus ({selectedEqIds.length})
+                          </button>
+                        </>
+                      )}
                     </div>
                   )}
 
