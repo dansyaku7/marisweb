@@ -116,7 +116,8 @@ export default function EquipmentsPage() {
   // Bulk Link Master
   const [isBulkLinkLoading, setIsBulkLinkLoading] = useState(false);
   const [isBulkLinkModalOpen, setIsBulkLinkModalOpen] = useState(false);
-  const [bulkLinkData, setBulkLinkData] = useState({ targetDoc: "suket", period: "", url: "" });
+  // STRATEGI UX: Cuma butuh URL, yang lain otomatis dihandle backend biar praktis
+  const [bulkLinkData, setBulkLinkData] = useState({ url: "" });
 
   // Client Request State
   const [isSubmittingRequest, setIsSubmittingRequest] = useState(false);
@@ -172,7 +173,6 @@ export default function EquipmentsPage() {
   const handleBulkDinas = async () => {
     if (selectedEqIds.length === 0) return;
 
-    // Cek status alat pertama yang dipilih untuk menentukan toggle aktif/nonaktif
     const firstEq = equipments.find((eq) => eq.id === selectedEqIds[0]);
     const targetStatus = !(firstEq?.isProsesDinas);
 
@@ -261,8 +261,8 @@ export default function EquipmentsPage() {
         body: JSON.stringify({
           action: 'add-bulk-link-all',
           companyId: selectedCompanyId,
-          targetDoc: bulkLinkData.targetDoc,
-          period: bulkLinkData.period,
+          targetDoc: "suket", // Hardcode biar logic database tetap aman
+          period: "Master Link", // Hardcode periode
           url: bulkLinkData.url
         }),
       });
@@ -271,7 +271,7 @@ export default function EquipmentsPage() {
       
       setStatusMsg({ type: "success", text: data.message });
       setIsBulkLinkModalOpen(false);
-      setBulkLinkData({ targetDoc: "suket", period: "", url: "" });
+      setBulkLinkData({ url: "" });
       fetchEquipments(selectedCompanyId);
     } catch (err: any) {
       setStatusMsg({ type: "error", text: err.message });
@@ -322,6 +322,8 @@ export default function EquipmentsPage() {
         const workbook = XLSX.read(data, { type: "array" });
         const ws       = workbook.Sheets[workbook.SheetNames[0]];
         const json: any[] = XLSX.utils.sheet_to_json(ws);
+        
+        // Mapped nangkep kolom baru: LINK GDRIVE
         const mapped = json.map((row) => ({
           name:           row["ALAT"]         || row["Nama Alat"]  || null,
           location:       row["LOKASI"]       || row["Lokasi"]     || null,
@@ -329,11 +331,13 @@ export default function EquipmentsPage() {
           serialNumber:   row["NOMOR SERIE"] || row["NOMOR SERI"] || null,
           inspectionDate: parseExcelDate(row["TANGGAL PEMERIKSAAN"] || row["Tanggal Pemeriksaan"]),
           expiryDate:     parseExcelDate(row["TANGGAL HABIS"]       || row["Tanggal Habis"]),
-          area:        row["AREA"]       || row["Area"]       || null,
-          brand:       row["MEREK"]      || row["Merek"]      || null,
-          capacity:    row["KAPASITAS"]  || row["Kapasitas"]  || null,
-          description: row["KETERANGAN"] || row["Keterangan"] || null,
+          area:           row["AREA"]       || row["Area"]       || null,
+          brand:          row["MEREK"]      || row["Merek"]      || null,
+          capacity:       row["KAPASITAS"]  || row["Kapasitas"]  || null,
+          description:    row["KETERANGAN"] || row["Keterangan"] || null,
+          gdriveLink:     row["LINK GDRIVE"] || row["Link GDrive"] || null, // Tangkep URL langsung
         }));
+        
         if (!mapped.length) throw new Error("Excel kosong atau format kolom tidak sesuai.");
         const res     = await fetch("/api/equipments/bulk", {
           method: "POST", headers: { "Content-Type": "application/json" },
@@ -354,22 +358,24 @@ export default function EquipmentsPage() {
   };
 
   const handleDownloadTemplate = () => {
+    // Tambahin kolom baru LINK GDRIVE di Excel
     const templateData = [{
       "ALAT": "CONTOH ALAT (WAJIB)", "LOKASI": "Gedung A",
       "NOMOR IZIN": "Cth: 123/IZIN/2025", "NOMOR SERIE": "Cth: SN-001",
       "TANGGAL PEMERIKSAAN": "2025-01-01", "TANGGAL HABIS": "2026-01-01",
       "AREA": ".....", "MEREK": "....",
       "KAPASITAS": "Cth: 5 Ton", "KETERANGAN": "Catatan tambahan (opsional)",
+      "LINK GDRIVE": "https://drive.google.com/..."
     }];
     const ws = XLSX.utils.json_to_sheet(templateData);
-    ["A1","B1","C1","D1","E1","F1","G1","H1","I1","J1"].forEach((col) => {
+    ["A1","B1","C1","D1","E1","F1","G1","H1","I1","J1","K1"].forEach((col) => {
       if (ws[col]) ws[col].s = {
         fill: { fgColor: { rgb: "F0A500" } },
         font: { bold: true, color: { rgb: "1A1A1A" } },
         alignment: { horizontal: "center" },
       };
     });
-    ws["!cols"] = Array(10).fill({ wch: 26 });
+    ws["!cols"] = Array(11).fill({ wch: 26 });
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "Template_Import");
     XLSX.writeFile(wb, "Template_Import_MTrack.xlsx");
@@ -848,7 +854,7 @@ export default function EquipmentsPage() {
                         onClick={() => setIsBulkLinkModalOpen(true)} 
                         disabled={!selectedCompanyId || isUploading}
                       >
-                        <LinkIcon size={13} />Link Master
+                        <LinkIcon size={13} /> Link Master
                       </button>
 
                       <button className="eq-tool-btn red" onClick={() => handleAdminNotify('expired')} disabled={!selectedCompanyId || isNotifyingBulkAll}>
@@ -1107,39 +1113,16 @@ export default function EquipmentsPage() {
       {isBulkLinkModalOpen && (
         <div className="modal-overlay" onClick={(e) => { if (e.target === e.currentTarget && !isBulkLinkLoading) setIsBulkLinkModalOpen(false); }}>
           <div className="modal-content" style={{ maxWidth: 400 }}>
-            <h3 className="modal-title">Link Master GDrive</h3>
+            <h3 className="modal-title">Bulk Link Master GDrive</h3>
             <p className="modal-subtitle">Terapkan satu link cloud ini ke seluruh alat di PT yang dipilih secara massal.</p>
             
             <form onSubmit={handleBulkLinkAllSubmit} style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-              <div>
-                <label className="modal-label">Jenis Dokumen</label>
-                <select 
-                  style={inputStyle} 
-                  value={bulkLinkData.targetDoc} 
-                  onChange={(e) => setBulkLinkData({...bulkLinkData, targetDoc: e.target.value})}
-                  disabled={isBulkLinkLoading}
-                >
-                  <option value="suket">Surat Keterangan (Suket)</option>
-                  <option value="laporan">Laporan Tahunan</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="modal-label">Periode Dokumen <span style={{ color: "#DC3C3C" }}>*</span></label>
-                <input 
-                  type="text" required style={inputStyle} placeholder="Cth: 2025-2026" 
-                  value={bulkLinkData.period} 
-                  onChange={(e) => setBulkLinkData({...bulkLinkData, period: e.target.value})}
-                  disabled={isBulkLinkLoading}
-                />
-              </div>
-
               <div>
                 <label className="modal-label">URL Google Drive <span style={{ color: "#DC3C3C" }}>*</span></label>
                 <input 
                   type="url" required style={inputStyle} placeholder="https://drive.google.com/..." 
                   value={bulkLinkData.url} 
-                  onChange={(e) => setBulkLinkData({...bulkLinkData, url: e.target.value})}
+                  onChange={(e) => setBulkLinkData({ url: e.target.value })}
                   disabled={isBulkLinkLoading}
                 />
               </div>

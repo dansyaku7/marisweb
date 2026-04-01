@@ -41,7 +41,8 @@ export async function POST(request: Request) {
       // Skip kalau tanggal tidak valid
       if (isNaN(inspectDate.getTime()) || isNaN(expDate.getTime())) continue;
 
-      validEquipments.push({
+      // Siapkan object data alat
+      const equipmentData: any = {
         companyId,
         // Field lama
         name:           String(eq.name),
@@ -50,12 +51,26 @@ export async function POST(request: Request) {
         serialNumber:   eq.serialNumber ? String(eq.serialNumber) : 'N/A',
         inspectionDate: inspectDate,
         expiryDate:     expDate,
-        // Field baru (opsional, null kalau kosong di Excel)
-        area:           eq.area        ? String(eq.area)        : null,
-        brand:          eq.brand       ? String(eq.brand)       : null,
-        capacity:       eq.capacity    ? String(eq.capacity)    : null,
-        description:    eq.description ? String(eq.description) : null,
-      });
+        // Field opsional (null kalau kosong di Excel)
+        area:           eq.area         ? String(eq.area)         : null,
+        brand:          eq.brand        ? String(eq.brand)        : null,
+        capacity:       eq.capacity     ? String(eq.capacity)     : null,
+        description:    eq.description  ? String(eq.description)  : null,
+      };
+
+      // --- LOGIC BARU: Tangkap LINK GDRIVE dari Excel ---
+      // Jika kolom GDrive Link diisi, otomatis buatkan relasi dokumennya
+      if (eq.gdriveLink && String(eq.gdriveLink).trim() !== '') {
+        equipmentData.suket = {
+          create: {
+            period: "Master Link",
+            fileUrl: String(eq.gdriveLink).trim(),
+            documentType: "LINK"
+          }
+        };
+      }
+
+      validEquipments.push(equipmentData);
     }
 
     if (validEquipments.length === 0) {
@@ -65,14 +80,18 @@ export async function POST(request: Request) {
       );
     }
 
-    const result = await prisma.equipment.createMany({
-      data: validEquipments,
-      skipDuplicates: true,
-    });
+    // --- STRATEGI BARU: $transaction ---
+    // Karena createMany tidak support relasi (nested writes), kita mapping datanya
+    // menjadi array of `create` operations dan mengeksekusinya dalam satu transaksi.
+    const transactions = validEquipments.map(eqData => 
+      prisma.equipment.create({ data: eqData })
+    );
+
+    const result = await prisma.$transaction(transactions);
 
     return NextResponse.json({
-      message: `Berhasil mengimpor ${result.count} alat berat`,
-      count: result.count,
+      message: `Berhasil mengimpor ${result.length} alat berat beserta dokumen terkait`,
+      count: result.length,
     }, { status: 201 });
 
   } catch (error: any) {
