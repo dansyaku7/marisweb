@@ -5,7 +5,7 @@ import {
   Wrench, Building2, Search, Loader2, FileUp,
   AlertTriangle, ShieldCheck, XOctagon, ChevronRight,
   CheckCircle2, Download, Edit, Trash2, ChevronLeft,
-  Plus, Send, MailWarning, FolderOpen, Clock, FileCheck
+  Plus, Send, MailWarning, FolderOpen, Clock, FileCheck, Link as LinkIcon
 } from "lucide-react";
 import * as XLSX from "xlsx-js-style";
 import DocumentDrawer from "@/components/equipment/DocumentDrawer";
@@ -112,6 +112,11 @@ export default function EquipmentsPage() {
   
   // Bulk Actions
   const [isBulkLoading, setIsBulkLoading] = useState(false);
+
+  // Bulk Link Master
+  const [isBulkLinkLoading, setIsBulkLinkLoading] = useState(false);
+  const [isBulkLinkModalOpen, setIsBulkLinkModalOpen] = useState(false);
+  const [bulkLinkData, setBulkLinkData] = useState({ targetDoc: "suket", period: "", url: "" });
 
   // Client Request State
   const [isSubmittingRequest, setIsSubmittingRequest] = useState(false);
@@ -240,6 +245,38 @@ export default function EquipmentsPage() {
       setStatusMsg({ type: "error", text: err.message });
     } finally {
       setIsBulkLoading(false);
+    }
+  };
+
+  // ── Bulk Link Master Handler ──
+  const handleBulkLinkAllSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedCompanyId) return;
+    
+    setIsBulkLinkLoading(true);
+    setStatusMsg(null);
+    try {
+      const res = await fetch("/api/equipments/bulk-action", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: 'add-bulk-link-all',
+          companyId: selectedCompanyId,
+          targetDoc: bulkLinkData.targetDoc,
+          period: bulkLinkData.period,
+          url: bulkLinkData.url
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || "Gagal menerapkan link massal.");
+      
+      setStatusMsg({ type: "success", text: data.message });
+      setIsBulkLinkModalOpen(false);
+      setBulkLinkData({ targetDoc: "suket", period: "", url: "" });
+      fetchEquipments(selectedCompanyId);
+    } catch (err: any) {
+      setStatusMsg({ type: "error", text: err.message });
+    } finally {
+      setIsBulkLinkLoading(false);
     }
   };
 
@@ -804,13 +841,23 @@ export default function EquipmentsPage() {
                       <button className="eq-tool-btn amber" onClick={() => fileInputRef.current?.click()} disabled={!selectedCompanyId || isUploading}>
                         {isUploading ? <Loader2 size={13} className="eq-spinner" /> : <FileUp size={13} />} Import File
                       </button>
+
+                      {/* --- TOMBOL BARU: BULK LINK MASTER --- */}
+                      <button 
+                        className="eq-tool-btn amber" 
+                        onClick={() => setIsBulkLinkModalOpen(true)} 
+                        disabled={!selectedCompanyId || isUploading}
+                      >
+                        <LinkIcon size={13} />Link Master
+                      </button>
+
                       <button className="eq-tool-btn red" onClick={() => handleAdminNotify('expired')} disabled={!selectedCompanyId || isNotifyingBulkAll}>
                         {isNotifyingBulkAll ? <Loader2 size={13} className="eq-spinner" /> : <MailWarning size={13} />}
                         {selectedEqIds.length > 0 ? `Kirim ${selectedEqIds.length} Peringatan` : "Alert Expired"}
                       </button>
                       <button className="eq-tool-btn green" onClick={() => handleAdminNotify('ready')} disabled={!selectedCompanyId || isNotifyingBulkAll}>
                         {isNotifyingBulkAll ? <Loader2 size={13} className="eq-spinner" /> : <FileCheck size={13} />}
-                        {selectedEqIds.length > 0 ? `Notif ${selectedEqIds.length} Dokumen` : "Notif Dok Ready"}
+                        {selectedEqIds.length > 0 ? `Notif ${selectedEqIds.length} Dokumen` : "Notif Dokumen"}
                       </button>
 
                       {/* --- TOMBOL BULK ACTION --- */}
@@ -1049,6 +1096,58 @@ export default function EquipmentsPage() {
                 <button type="button" className="modal-btn-cancel" onClick={() => setIsAddModalOpen(false)} disabled={isSubmittingAdd}>Batal</button>
                 <button type="submit" className="modal-btn-submit" disabled={isSubmittingAdd}>
                   {isSubmittingAdd ? <Loader2 size={14} className="eq-spinner" /> : <><CheckCircle2 size={14} /> Tambah Alat</>}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ── MODAL BULK LINK MASTER ── */}
+      {isBulkLinkModalOpen && (
+        <div className="modal-overlay" onClick={(e) => { if (e.target === e.currentTarget && !isBulkLinkLoading) setIsBulkLinkModalOpen(false); }}>
+          <div className="modal-content" style={{ maxWidth: 400 }}>
+            <h3 className="modal-title">Link Master GDrive</h3>
+            <p className="modal-subtitle">Terapkan satu link cloud ini ke seluruh alat di PT yang dipilih secara massal.</p>
+            
+            <form onSubmit={handleBulkLinkAllSubmit} style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+              <div>
+                <label className="modal-label">Jenis Dokumen</label>
+                <select 
+                  style={inputStyle} 
+                  value={bulkLinkData.targetDoc} 
+                  onChange={(e) => setBulkLinkData({...bulkLinkData, targetDoc: e.target.value})}
+                  disabled={isBulkLinkLoading}
+                >
+                  <option value="suket">Surat Keterangan (Suket)</option>
+                  <option value="laporan">Laporan Tahunan</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="modal-label">Periode Dokumen <span style={{ color: "#DC3C3C" }}>*</span></label>
+                <input 
+                  type="text" required style={inputStyle} placeholder="Cth: 2025-2026" 
+                  value={bulkLinkData.period} 
+                  onChange={(e) => setBulkLinkData({...bulkLinkData, period: e.target.value})}
+                  disabled={isBulkLinkLoading}
+                />
+              </div>
+
+              <div>
+                <label className="modal-label">URL Google Drive <span style={{ color: "#DC3C3C" }}>*</span></label>
+                <input 
+                  type="url" required style={inputStyle} placeholder="https://drive.google.com/..." 
+                  value={bulkLinkData.url} 
+                  onChange={(e) => setBulkLinkData({...bulkLinkData, url: e.target.value})}
+                  disabled={isBulkLinkLoading}
+                />
+              </div>
+
+              <div style={{ display: "flex", gap: 10, marginTop: 12 }}>
+                <button type="button" className="modal-btn-cancel" onClick={() => setIsBulkLinkModalOpen(false)} disabled={isBulkLinkLoading}>Batal</button>
+                <button type="submit" className="modal-btn-submit" disabled={isBulkLinkLoading}>
+                  {isBulkLinkLoading ? <Loader2 size={14} className="eq-spinner" /> : <><CheckCircle2 size={14} /> Terapkan ke Semua</>}
                 </button>
               </div>
             </form>

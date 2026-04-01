@@ -20,8 +20,53 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json();
-    const { action, equipmentIds, isProsesDinas } = body;
+    const { action, equipmentIds, isProsesDinas, companyId, targetDoc, period, url } = body;
 
+    // --- AKSI BARU: TAMBAH LINK CLOUD KE SEMUA ALAT (SATU PT) ---
+    if (action === 'add-bulk-link-all') {
+      if (!companyId || !targetDoc || !period || !url) {
+        return NextResponse.json({ message: 'Data form tidak lengkap.' }, { status: 400 });
+      }
+
+      // Ambil semua ID alat yang ada di Klien (Company) ini
+      const equipments = await prisma.equipment.findMany({
+        where: { companyId },
+        select: { id: true }
+      });
+
+      if (equipments.length === 0) {
+        return NextResponse.json({ message: 'Tidak ada data alat di klien ini.' }, { status: 404 });
+      }
+
+      if (targetDoc === 'suket') {
+        // Suket sifatnya history (append), jadi kita pakai createMany
+        const dataToInsert = equipments.map(eq => ({
+          equipmentId: eq.id,
+          period: period.trim(),
+          fileUrl: url.trim(),
+          documentType: 'LINK' as const
+        }));
+        await prisma.suket.createMany({ data: dataToInsert });
+      } 
+      else if (targetDoc === 'laporan') {
+        // Laporan sifatnya unik per periode (upsert), kita bungkus dalam transaction
+        const transactions = equipments.map(eq => prisma.laporan.upsert({
+          where: { equipmentId_period: { equipmentId: eq.id, period: period.trim() } },
+          update: { fileUrl: url.trim(), documentType: 'LINK', updatedAt: new Date() },
+          create: { equipmentId: eq.id, period: period.trim(), fileUrl: url.trim(), documentType: 'LINK' }
+        }));
+        await prisma.$transaction(transactions);
+      }
+
+      return NextResponse.json(
+        { message: `Link berhasil dipasang ke ${equipments.length} alat.` },
+        { status: 200 }
+      );
+    }
+
+    // ====================================================================
+    // Validasi di bawah ini khusus untuk aksi yang butuh equipmentIds (Checkbox)
+    // ====================================================================
     if (!equipmentIds || !Array.isArray(equipmentIds) || equipmentIds.length === 0) {
       return NextResponse.json(
         { message: 'Tidak ada alat yang dipilih' },
@@ -29,14 +74,14 @@ export async function POST(request: Request) {
       );
     }
 
-    // --- AKSI: HAPUS MASSAL ---
+    // --- AKSI LAMA: HAPUS MASSAL ---
     if (action === 'delete') {
-      // Sama seperti individual delete, hapus EmailLog yang relasinya manual
+      // Hapus log email manual karena tidak pakai cascade di schema
       await prisma.emailLog.deleteMany({
         where: { equipmentId: { in: equipmentIds } },
       });
 
-      // Suket & Laporan terhapus via Cascade (harus ada onDelete: Cascade di schema Prisma lo)
+      // Suket & Laporan terhapus via Cascade
       const result = await prisma.equipment.deleteMany({
         where: { id: { in: equipmentIds } },
       });
@@ -47,7 +92,7 @@ export async function POST(request: Request) {
       );
     }
 
-    // --- AKSI: TOGGLE PROSES DINAS ---
+    // --- AKSI LAMA: TOGGLE PROSES DINAS ---
     if (action === 'toggle-dinas') {
       const result = await prisma.equipment.updateMany({
         where: { id: { in: equipmentIds } },
