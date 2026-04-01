@@ -34,6 +34,12 @@ enum EmailTemplateType {
   READY_BULK        // Notif massal (Dokumen Selesai)
 }
 
+// Penanda untuk membedakan antara file fisik dan link cloud
+enum DocumentType {
+  UPLOAD
+  LINK
+}
+
 // ==========================================
 // MODELS
 // ==========================================
@@ -101,26 +107,28 @@ model Equipment {
 }
 
 model Suket {
-  id          String    @id @default(uuid())
-  equipmentId String
-  equipment   Equipment @relation(fields: [equipmentId], references: [id], onDelete: Cascade)
-  period      String
-  fileUrl     String    @db.Text
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  id           String       @id @default(uuid())
+  equipmentId  String
+  equipment    Equipment    @relation(fields: [equipmentId], references: [id], onDelete: Cascade)
+  period       String
+  fileUrl      String       @db.Text
+  documentType DocumentType @default(UPLOAD)
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
 
   @@index([equipmentId])
   @@map("sukets")
 }
 
 model Laporan {
-  id          String    @id @default(uuid())
-  equipmentId String
-  equipment   Equipment @relation(fields: [equipmentId], references: [id], onDelete: Cascade)
-  period      String
-  fileUrl     String    @db.Text
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  id           String       @id @default(uuid())
+  equipmentId  String
+  equipment    Equipment    @relation(fields: [equipmentId], references: [id], onDelete: Cascade)
+  period       String
+  fileUrl      String       @db.Text
+  documentType DocumentType @default(UPLOAD)
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
 
   @@unique([equipmentId, period])
   @@index([equipmentId])
@@ -145,16 +153,16 @@ model EmailLog {
 }
 
 model EmailTemplate {
-  id          String            @id @default(uuid())
-  companyId   String?           // NULL berarti template GLOBAL
-  company     Company?          @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  type        EmailTemplateType
-  senderName  String            @default("M-Track Marusindo")
-  subject     String            @db.Text
-  introText   String            @db.Text
-  footerText  String            @db.Text
-  createdAt   DateTime          @default(now())
-  updatedAt   DateTime          @updatedAt
+  id         String            @id @default(uuid())
+  companyId  String?           // NULL berarti template GLOBAL
+  company    Company?          @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  type       EmailTemplateType
+  senderName String            @default("M-Track Marusindo")
+  subject    String            @db.Text
+  introText  String            @db.Text
+  footerText String            @db.Text
+  createdAt  DateTime          @default(now())
+  updatedAt  DateTime          @updatedAt
 
   // Constraint: Satu company cuma boleh punya satu template per tipe
   @@unique([companyId, type])

@@ -27,7 +27,7 @@ export async function POST(
     const equipmentId = resolvedParams.id;
 
     const body = await request.json();
-    const { period, fileUrl } = body;
+    const { period, fileUrl, documentType } = body;
 
     if (!period?.trim()) {
       return NextResponse.json({ message: 'Periode laporan wajib diisi (cth: 2025-2026)' }, { status: 400 });
@@ -50,12 +50,14 @@ export async function POST(
       },
       update: {
         fileUrl: fileUrl.trim(),
+        documentType: documentType ? documentType.toUpperCase() : 'UPLOAD',
         updatedAt: new Date(),
       },
       create: {
         equipmentId,
         period: period.trim(),
         fileUrl: fileUrl.trim(),
+        documentType: documentType ? documentType.toUpperCase() : 'UPLOAD',
       },
     });
 

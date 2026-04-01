@@ -1,9 +1,10 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { X, FolderOpen, AlertTriangle, ShieldCheck, Clock, FileUp, Cloud } from "lucide-react";
+import { X, FolderOpen, AlertTriangle, ShieldCheck, Clock, FileUp, Link as LinkIcon, Trash2, Loader2 } from "lucide-react";
 import DocumentTimeline from "./DocumentTimeline";
 import LaporanSection from "./LaporanSection";
+import UploadForm from "./UploadForm";
 
 // ============================================================
 // TIPE DATA
@@ -46,11 +47,12 @@ interface DocumentDrawerProps {
 }
 
 // ============================================================
-// HELPER
+// HELPER: Cek apakah dokumen ini Link atau File
 // ============================================================
 const isCloudLink = (url: string, type?: string) => {
-  if (type) return type === "link";
-  const u = url.toLowerCase();
+  // FIX: Pastikan cek type dari DB pakai toUpperCase biar sinkron dengan enum Prisma
+  if (type) return type.toUpperCase() === "LINK";
+  const u = url ? url.toLowerCase() : "";
   return u.includes("drive.google.com") || u.includes("docs.google.com") || u.includes("dropbox.com") || u.includes("sharepoint");
 };
 
@@ -198,6 +200,9 @@ export default function DocumentDrawer({
   const [isDeletingLaporanId, setIsDeletingLaporanId] = useState<string | null>(null);
   const [successMsg, setSuccessMsg]               = useState<string | null>(null);
   const [isTogglingDinas, setIsTogglingDinas]     = useState(false);
+  
+  // State untuk form input Link di Section 3
+  const [activeLinkForm, setActiveLinkForm]       = useState<"suket" | "laporan" | null>(null);
 
   useEffect(() => {
     if (!successMsg) return;
@@ -309,14 +314,20 @@ export default function DocumentDrawer({
   if (!isOpen || !equipment) return null;
   const suketList   = equipment.suket   ?? [];
   const laporanList = equipment.laporan ?? [];
-  const hasDocs     = suketList.length > 0 || laporanList.length > 0;
-
-  // Pisahkan data untuk dirender ke masing-masing kategori
-  const suketUploads = suketList.filter(s => !isCloudLink(s.fileUrl, s.documentType));
-  const suketLinks   = suketList.filter(s => isCloudLink(s.fileUrl, s.documentType));
   
+  // STRATEGI: Pisahkan data menjadi File vs Link
+  const suketUploads   = suketList.filter(s => !isCloudLink(s.fileUrl, s.documentType));
   const laporanUploads = laporanList.filter(l => !isCloudLink(l.fileUrl, l.documentType));
-  const laporanLinks   = laporanList.filter(l => isCloudLink(l.fileUrl, l.documentType));
+
+  // Gabungkan semua yang berupa link untuk dirender di Section 3
+  const combinedLinks = [
+    ...suketList.filter(s => isCloudLink(s.fileUrl, s.documentType)).map(s => ({
+      ...s, docTypeLabel: "Suket", isDeleting: isDeletingSuketId === s.id, onDelete: () => handleDeleteSuket(s.id)
+    })),
+    ...laporanList.filter(l => isCloudLink(l.fileUrl, l.documentType)).map(l => ({
+      ...l, docTypeLabel: "Laporan", isDeleting: isDeletingLaporanId === l.id, onDelete: () => handleDeleteLaporan(l.id)
+    }))
+  ].sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
 
   return (
     <>
@@ -347,10 +358,8 @@ export default function DocumentDrawer({
             <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
               <div style={{
                 width: 38, height: 38, borderRadius: 10, flexShrink: 0,
-                background: hasDocs ? "rgba(34,160,100,0.08)" : "rgba(240,165,0,0.08)",
-                border: `1.5px solid ${hasDocs ? "rgba(34,160,100,0.2)" : "rgba(240,165,0,0.2)"}`,
-                display: "flex", alignItems: "center", justifyContent: "center",
-                color: hasDocs ? "#22A064" : "#C87A00",
+                background: "rgba(240,165,0,0.08)", border: "1.5px solid rgba(240,165,0,0.2)",
+                display: "flex", alignItems: "center", justifyContent: "center", color: "#C87A00",
               }}><FolderOpen size={18} /></div>
               <div>
                 <p style={{ fontSize: 15, fontWeight: 700, color: "#1A1A1A", margin: 0 }}>Kelola Dokumen</p>
@@ -406,79 +415,108 @@ export default function DocumentDrawer({
           )}
         </div>
 
-        {/* Content Area Terpisah */}
+        {/* Content Area - DIBAGI 3 (Sesuai Kebutuhan) */}
         <div style={{ flex: 1, overflowY: "auto", padding: "24px", display: "flex", flexDirection: "column", gap: 36 }}>
           
-          {/* GROUP 1: BERKAS FISIK (UPLOAD) */}
-          <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
-            <h4 style={{ fontSize: 11, fontWeight: 700, color: "#AAAAAA", textTransform: "uppercase", letterSpacing: "0.12em", margin: "0 0 -12px 0", display: "flex", alignItems: "center", gap: 6 }}>
-              <FolderOpen size={13} /> Dokumen Berkas Fisik (Upload)
-            </h4>
-            
-            <DocumentTimeline
-              suketList={suketUploads}
-              title="Surat Keterangan (File)"
-              emptyText="Belum ada file suket yang diupload."
-              buttonText="Upload File Suket"
-              forcedMode="upload"
-              userRole={userRole}
-              isSubmitting={isSubmittingSuket}
-              isDeletingId={isDeletingSuketId}
-              onUpload={handleUploadSuket}
-              onPreview={setPreviewUrl}
-              onDelete={handleDeleteSuket}
-            />
-            
-            <LaporanSection
-              laporanList={laporanUploads}
-              title="Laporan Tahunan (File)"
-              emptyText="Belum ada file laporan yang diupload."
-              buttonText="Upload File Laporan"
-              forcedMode="upload"
-              userRole={userRole}
-              isSubmitting={isSubmittingLaporan}
-              isDeletingId={isDeletingLaporanId}
-              onUpload={handleUploadLaporan}
-              onPreview={setPreviewUrl}
-              onDelete={handleDeleteLaporan}
-            />
-          </div>
+          {/* ── 1. SURAT KETERANGAN (KHUSUS FILE) ── */}
+          <DocumentTimeline
+            suketList={suketUploads}
+            title="1. Surat Keterangan"
+            emptyText="Belum ada file suket yang diupload."
+            buttonText="Upload File Suket"
+            forcedMode="upload"
+            userRole={userRole}
+            isSubmitting={isSubmittingSuket}
+            isDeletingId={isDeletingSuketId}
+            onUpload={handleUploadSuket}
+            onPreview={setPreviewUrl}
+            onDelete={handleDeleteSuket}
+          />
+          
+          {/* ── 2. LAPORAN TAHUNAN (KHUSUS FILE) ── */}
+          <LaporanSection
+            laporanList={laporanUploads}
+            title="2. Laporan Tahunan"
+            emptyText="Belum ada file laporan yang diupload."
+            buttonText="Upload File Laporan"
+            forcedMode="upload"
+            userRole={userRole}
+            isSubmitting={isSubmittingLaporan}
+            isDeletingId={isDeletingLaporanId}
+            onUpload={handleUploadLaporan}
+            onPreview={setPreviewUrl}
+            onDelete={handleDeleteLaporan}
+          />
 
           <div style={{ height: 1.5, background: "linear-gradient(90deg, #EAE7DF 0%, transparent 80%)", opacity: 0.6 }} />
 
-          {/* GROUP 2: TAUTAN CLOUD (LINK) */}
-          <div style={{ display: "flex", flexDirection: "column", gap: 24, paddingBottom: 12 }}>
-            <h4 style={{ fontSize: 11, fontWeight: 700, color: "#AAAAAA", textTransform: "uppercase", letterSpacing: "0.12em", margin: "0 0 -12px 0", display: "flex", alignItems: "center", gap: 6 }}>
-              <Cloud size={13} /> Tautan Dokumen Cloud
-            </h4>
-            
-            <DocumentTimeline
-              suketList={suketLinks}
-              title="Surat Keterangan (Tautan)"
-              emptyText="Belum ada tautan suket cloud."
-              buttonText="Tambah Link Suket"
-              forcedMode="link"
-              userRole={userRole}
-              isSubmitting={isSubmittingSuket}
-              isDeletingId={isDeletingSuketId}
-              onUpload={handleUploadSuket}
-              onPreview={setPreviewUrl}
-              onDelete={handleDeleteSuket}
-            />
-            
-            <LaporanSection
-              laporanList={laporanLinks}
-              title="Laporan Tahunan (Tautan)"
-              emptyText="Belum ada tautan laporan cloud."
-              buttonText="Tambah Link Laporan"
-              forcedMode="link"
-              userRole={userRole}
-              isSubmitting={isSubmittingLaporan}
-              isDeletingId={isDeletingLaporanId}
-              onUpload={handleUploadLaporan}
-              onPreview={setPreviewUrl}
-              onDelete={handleDeleteLaporan}
-            />
+          {/* ── 3. LINK GOOGLE DRIVE (GABUNGAN SUKET & LAPORAN) ── */}
+          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <div style={{ width: 28, height: 28, background: "rgba(59,130,246,0.08)", border: "1.5px solid rgba(59,130,246,0.18)", borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center", color: "#3B82F6" }}>
+                  <LinkIcon size={14} />
+                </div>
+                <span style={{ fontSize: 13, fontWeight: 600, color: "#555550" }}>
+                  3. Link Google Drive
+                </span>
+              </div>
+
+              {userRole === "SUPERADMIN" && (
+                <div style={{ display: "flex", gap: 6 }}>
+                  <button onClick={() => setActiveLinkForm(activeLinkForm === 'suket' ? null : 'suket')} style={{ fontSize: 10, fontWeight: 600, padding: "5px 10px", borderRadius: 6, background: activeLinkForm === 'suket' ? "rgba(59,130,246,0.1)" : "#F5F3EE", border: `1px solid ${activeLinkForm === 'suket' ? "rgba(59,130,246,0.3)" : "#E5E2D8"}`, color: activeLinkForm === 'suket' ? "#3B82F6" : "#888880", cursor: "pointer", transition: "0.15s" }}>
+                    + Link Suket
+                  </button>
+                  <button onClick={() => setActiveLinkForm(activeLinkForm === 'laporan' ? null : 'laporan')} style={{ fontSize: 10, fontWeight: 600, padding: "5px 10px", borderRadius: 6, background: activeLinkForm === 'laporan' ? "rgba(59,130,246,0.1)" : "#F5F3EE", border: `1px solid ${activeLinkForm === 'laporan' ? "rgba(59,130,246,0.3)" : "#E5E2D8"}`, color: activeLinkForm === 'laporan' ? "#3B82F6" : "#888880", cursor: "pointer", transition: "0.15s" }}>
+                    + Link Laporan
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {/* Form Input Link Muncul Saat Tombol Diklik */}
+            {activeLinkForm && userRole === "SUPERADMIN" && (
+              <UploadForm
+                label={`Tambah Link ${activeLinkForm === 'suket' ? 'Suket' : 'Laporan'}`}
+                showPeriod
+                periodPlaceholder={`Periode ${activeLinkForm} (cth: 2025-2026)`}
+                forcedMode="link"
+                isSubmitting={activeLinkForm === 'suket' ? isSubmittingSuket : isSubmittingLaporan}
+                onSubmit={(data) => {
+                  if (activeLinkForm === 'suket') handleUploadSuket(data);
+                  else handleUploadLaporan(data);
+                  setActiveLinkForm(null); // Tutup form abis submit
+                }}
+              />
+            )}
+
+            {/* List Tampilan URL Mentah Sesuai Request */}
+            {combinedLinks.length === 0 ? (
+              <div style={{ textAlign: "center", padding: "20px 16px", background: "#FAFAF7", border: "1.5px dashed #E5E2D8", borderRadius: 10, color: "#AAAAAA", fontSize: 12 }}>
+                Belum ada link yang ditambahkan.
+              </div>
+            ) : (
+              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                {combinedLinks.map(link => (
+                  <div key={link.id} style={{ background: link.isDeleting ? "rgba(220,60,60,0.03)" : "#FAFAF7", border: link.isDeleting ? "1.5px solid rgba(220,60,60,0.2)" : "1.5px solid #EAE7DF", borderRadius: 10, padding: "12px", opacity: link.isDeleting ? 0.6 : 1, transition: "0.2s" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
+                      <span style={{ fontSize: 12, fontWeight: 700, color: "#1A1A1A" }}>
+                        {link.docTypeLabel} <span style={{ color: "#888880", fontWeight: 500 }}>• Periode {link.period}</span>
+                      </span>
+                      {userRole === "SUPERADMIN" && (
+                        <button onClick={link.onDelete} disabled={link.isDeleting} style={{ background: "transparent", border: "none", color: "#DC3C3C", cursor: link.isDeleting ? "wait" : "pointer", padding: 4 }} title="Hapus Link">
+                          {link.isDeleting ? <Loader2 size={14} style={{ animation: "spin 1s linear infinite" }} /> : <Trash2 size={14} />}
+                        </button>
+                      )}
+                    </div>
+                    {/* Render URL langsung sebagai text yang bisa diklik */}
+                    <a href={link.fileUrl} target="_blank" rel="noreferrer" style={{ fontSize: 12, color: "#3B82F6", wordBreak: "break-all", textDecoration: "underline", lineHeight: 1.4, display: "block" }}>
+                      {link.fileUrl}
+                    </a>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 
         </div>
