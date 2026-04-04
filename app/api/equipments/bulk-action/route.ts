@@ -20,76 +20,83 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json();
-    const { action, equipmentIds, isProsesDinas, companyId, targetDoc, period, url } = body;
+    const { action, equipmentIds, isProsesDinas, companyId, period, url } = body;
 
-    // --- AKSI BARU: TAMBAH LINK CLOUD KE SEMUA ALAT (SATU PT) ---
+    // ====================================================================
+    // FITUR BARU: BULK LINK CLOUD (ADD & DELETE)
+    // ====================================================================
+
+    // --- 1. AKSI: TAMBAH LINK CLOUD ---
     if (action === 'add-bulk-link-all') {
-      if (!companyId || !targetDoc || !period || !url) {
+      if (!companyId || !period || !url) {
         return NextResponse.json({ message: 'Data form tidak lengkap.' }, { status: 400 });
       }
 
-      // Ambil semua ID alat yang ada di Klien (Company) ini
-      const equipments = await prisma.equipment.findMany({
-        where: { companyId },
-        select: { id: true }
+      let targetIds: string[] = [];
+
+      if (equipmentIds && Array.isArray(equipmentIds) && equipmentIds.length > 0) {
+        targetIds = equipmentIds;
+      } else {
+        const equipments = await prisma.equipment.findMany({
+          where: { companyId },
+          select: { id: true }
+        });
+        if (equipments.length === 0) return NextResponse.json({ message: 'Tidak ada data alat.' }, { status: 404 });
+        targetIds = equipments.map(eq => eq.id);
+      }
+
+      const dataToInsert = targetIds.map(id => ({
+        equipmentId: id,
+        period: period.trim(),
+        fileUrl: url.trim(),
+        documentType: 'LINK' as const
+      }));
+      
+      await prisma.suket.createMany({ data: dataToInsert });
+
+      return NextResponse.json({ message: `Link berhasil dipasang ke ${targetIds.length} alat.` }, { status: 200 });
+    }
+
+    // --- 2. AKSI: HAPUS LINK CLOUD ---
+    if (action === 'delete-bulk-link') {
+      if (!companyId || !url) return NextResponse.json({ message: 'URL tidak valid.' }, { status: 400 });
+
+      let targetIds: string[] = [];
+
+      if (equipmentIds && Array.isArray(equipmentIds) && equipmentIds.length > 0) {
+        targetIds = equipmentIds;
+      } else {
+        const equipments = await prisma.equipment.findMany({
+          where: { companyId },
+          select: { id: true }
+        });
+        targetIds = equipments.map(eq => eq.id);
+      }
+
+      // Hapus link tersebut dari tabel Suket (dan Laporan buat jaga-jaga kalau ada history lama) 
+      // HANYA pada alat-alat yang menjadi target
+      await prisma.suket.deleteMany({
+        where: { equipmentId: { in: targetIds }, fileUrl: url, documentType: 'LINK' }
+      });
+      await prisma.laporan.deleteMany({
+        where: { equipmentId: { in: targetIds }, fileUrl: url, documentType: 'LINK' }
       });
 
-      if (equipments.length === 0) {
-        return NextResponse.json({ message: 'Tidak ada data alat di klien ini.' }, { status: 404 });
-      }
-
-      if (targetDoc === 'suket') {
-        // Suket sifatnya history (append), jadi kita pakai createMany
-        const dataToInsert = equipments.map(eq => ({
-          equipmentId: eq.id,
-          period: period.trim(),
-          fileUrl: url.trim(),
-          documentType: 'LINK' as const
-        }));
-        await prisma.suket.createMany({ data: dataToInsert });
-      } 
-      else if (targetDoc === 'laporan') {
-        // Laporan sifatnya unik per periode (upsert), kita bungkus dalam transaction
-        const transactions = equipments.map(eq => prisma.laporan.upsert({
-          where: { equipmentId_period: { equipmentId: eq.id, period: period.trim() } },
-          update: { fileUrl: url.trim(), documentType: 'LINK', updatedAt: new Date() },
-          create: { equipmentId: eq.id, period: period.trim(), fileUrl: url.trim(), documentType: 'LINK' }
-        }));
-        await prisma.$transaction(transactions);
-      }
-
-      return NextResponse.json(
-        { message: `Link berhasil dipasang ke ${equipments.length} alat.` },
-        { status: 200 }
-      );
+      return NextResponse.json({ message: `Link berhasil dihapus dari alat yang dipilih.` }, { status: 200 });
     }
 
     // ====================================================================
-    // Validasi di bawah ini khusus untuk aksi yang butuh equipmentIds (Checkbox)
+    // Validasi di bawah ini khusus untuk aksi yang WAJIB ada equipmentIds
     // ====================================================================
     if (!equipmentIds || !Array.isArray(equipmentIds) || equipmentIds.length === 0) {
-      return NextResponse.json(
-        { message: 'Tidak ada alat yang dipilih' },
-        { status: 400 }
-      );
+      return NextResponse.json({ message: 'Tidak ada alat yang dipilih' }, { status: 400 });
     }
 
     // --- AKSI LAMA: HAPUS MASSAL ---
     if (action === 'delete') {
-      // Hapus log email manual karena tidak pakai cascade di schema
-      await prisma.emailLog.deleteMany({
-        where: { equipmentId: { in: equipmentIds } },
-      });
-
-      // Suket & Laporan terhapus via Cascade
-      const result = await prisma.equipment.deleteMany({
-        where: { id: { in: equipmentIds } },
-      });
-
-      return NextResponse.json(
-        { message: `${result.count} alat berhasil dihapus secara massal.` },
-        { status: 200 }
-      );
+      await prisma.emailLog.deleteMany({ where: { equipmentId: { in: equipmentIds } } });
+      const result = await prisma.equipment.deleteMany({ where: { id: { in: equipmentIds } } });
+      return NextResponse.json({ message: `${result.count} alat berhasil dihapus secara massal.` }, { status: 200 });
     }
 
     // --- AKSI LAMA: TOGGLE PROSES DINAS ---
@@ -98,20 +105,13 @@ export async function POST(request: Request) {
         where: { id: { in: equipmentIds } },
         data: { isProsesDinas: Boolean(isProsesDinas) },
       });
-
-      return NextResponse.json(
-        { message: `${result.count} alat berhasil diupdate statusnya.` },
-        { status: 200 }
-      );
+      return NextResponse.json({ message: `${result.count} alat berhasil diupdate statusnya.` }, { status: 200 });
     }
 
     return NextResponse.json({ message: 'Aksi tidak valid.' }, { status: 400 });
 
   } catch (error) {
     console.error('[BULK ACTION ERROR]:', error);
-    return NextResponse.json(
-      { message: 'Terjadi kesalahan sistem saat memproses aksi massal' },
-      { status: 500 }
-    );
+    return NextResponse.json({ message: 'Terjadi kesalahan sistem saat memproses aksi massal' }, { status: 500 });
   }
 }

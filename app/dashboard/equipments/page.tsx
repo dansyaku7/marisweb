@@ -5,7 +5,7 @@ import {
   Wrench, Building2, Search, Loader2, FileUp,
   AlertTriangle, ShieldCheck, XOctagon, ChevronRight,
   CheckCircle2, Download, Edit, Trash2, ChevronLeft,
-  Plus, Send, MailWarning, FolderOpen, Clock, FileCheck, Link as LinkIcon
+  Plus, Send, MailWarning, FolderOpen, Clock, X, FileCheck, Link as LinkIcon, Cloud
 } from "lucide-react";
 import * as XLSX from "xlsx-js-style";
 import DocumentDrawer from "@/components/equipment/DocumentDrawer";
@@ -15,8 +15,8 @@ import { useConfirm } from "@/components/providers/confirm-dialog";
 // TIPE DATA
 // ============================================================
 interface Company { id: string; name: string; }
-interface Suket   { id: string; period: string; fileUrl: string; createdAt: string; }
-interface Laporan { id: string; period: string; fileUrl: string; createdAt?: string; }
+interface Suket   { id: string; period: string; fileUrl: string; documentType?: string; createdAt: string; }
+interface Laporan { id: string; period: string; fileUrl: string; documentType?: string; createdAt?: string; }
 interface Equipment {
   id: string; name: string; permitNumber: string; serialNumber: string;
   location: string | null; inspectionDate: string; expiryDate: string;
@@ -50,6 +50,13 @@ const parseExcelDate = (excelDate: any) => {
   const d = new Date(excelDate);
   if (!isNaN(d.getTime())) return d.toISOString().split("T")[0];
   return excelDate;
+};
+
+// Cek apakah url adalah cloud link
+const isCloudLink = (url: string, type?: string) => {
+  if (type) return type.toUpperCase() === "LINK";
+  const u = url ? url.toLowerCase() : "";
+  return u.includes("drive.google.com") || u.includes("docs.google.com") || u.includes("dropbox.com") || u.includes("sharepoint");
 };
 
 const inputStyle: React.CSSProperties = {
@@ -116,8 +123,8 @@ export default function EquipmentsPage() {
   // Bulk Link Master
   const [isBulkLinkLoading, setIsBulkLinkLoading] = useState(false);
   const [isBulkLinkModalOpen, setIsBulkLinkModalOpen] = useState(false);
-  // STRATEGI UX: Cuma butuh URL, yang lain otomatis dihandle backend biar praktis
-  const [bulkLinkData, setBulkLinkData] = useState({ url: "" });
+  const [bulkLinkData, setBulkLinkData] = useState({ period: "", url: "" });
+  const [deletingBulkUrl, setDeletingBulkUrl] = useState<string | null>(null);
 
   // Client Request State
   const [isSubmittingRequest, setIsSubmittingRequest] = useState(false);
@@ -248,7 +255,7 @@ export default function EquipmentsPage() {
     }
   };
 
-  // ── Bulk Link Master Handler ──
+  // ── Bulk Link Master Handler (ADD) ──
   const handleBulkLinkAllSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedCompanyId) return;
@@ -261,8 +268,8 @@ export default function EquipmentsPage() {
         body: JSON.stringify({
           action: 'add-bulk-link-all',
           companyId: selectedCompanyId,
-          targetDoc: "suket", // Hardcode biar logic database tetap aman
-          period: "Master Link", // Hardcode periode
+          equipmentIds: selectedEqIds, 
+          period: bulkLinkData.period, 
           url: bulkLinkData.url
         }),
       });
@@ -270,13 +277,52 @@ export default function EquipmentsPage() {
       if (!res.ok) throw new Error(data.message || "Gagal menerapkan link massal.");
       
       setStatusMsg({ type: "success", text: data.message });
-      setIsBulkLinkModalOpen(false);
-      setBulkLinkData({ url: "" });
+      setBulkLinkData({ period: "", url: "" });
       fetchEquipments(selectedCompanyId);
     } catch (err: any) {
       setStatusMsg({ type: "error", text: err.message });
     } finally {
       setIsBulkLinkLoading(false);
+    }
+  };
+
+  // ── Bulk Link Master Handler (DELETE) ──
+  const handleDeleteBulkLink = async (url: string) => {
+    if (!selectedCompanyId) return;
+
+    const ok = await confirm({
+      variant: "danger",
+      title: "Hapus Link Cloud",
+      description: selectedEqIds.length > 0 
+        ? `Hapus tautan ini dari ${selectedEqIds.length} alat yang dipilih?` 
+        : `Hapus tautan ini dari SELURUH alat di PT ini?`,
+      confirmLabel: "Ya, Hapus",
+      cancelLabel: "Batal",
+    });
+    
+    if (!ok) return;
+
+    setDeletingBulkUrl(url);
+    setStatusMsg(null);
+    try {
+      const res = await fetch("/api/equipments/bulk-action", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: 'delete-bulk-link',
+          companyId: selectedCompanyId,
+          equipmentIds: selectedEqIds,
+          url: url
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || "Gagal menghapus link.");
+      
+      setStatusMsg({ type: "success", text: data.message });
+      fetchEquipments(selectedCompanyId);
+    } catch (err: any) {
+      setStatusMsg({ type: "error", text: err.message });
+    } finally {
+      setDeletingBulkUrl(null);
     }
   };
 
@@ -323,7 +369,6 @@ export default function EquipmentsPage() {
         const ws       = workbook.Sheets[workbook.SheetNames[0]];
         const json: any[] = XLSX.utils.sheet_to_json(ws);
         
-        // Mapped nangkep kolom baru: LINK GDRIVE
         const mapped = json.map((row) => ({
           name:           row["ALAT"]         || row["Nama Alat"]  || null,
           location:       row["LOKASI"]       || row["Lokasi"]     || null,
@@ -335,7 +380,7 @@ export default function EquipmentsPage() {
           brand:          row["MEREK"]      || row["Merek"]      || null,
           capacity:       row["KAPASITAS"]  || row["Kapasitas"]  || null,
           description:    row["KETERANGAN"] || row["Keterangan"] || null,
-          gdriveLink:     row["LINK GDRIVE"] || row["Link GDrive"] || null, // Tangkep URL langsung
+          gdriveLink:     row["LINK GDRIVE"] || row["Link GDrive"] || null,
         }));
         
         if (!mapped.length) throw new Error("Excel kosong atau format kolom tidak sesuai.");
@@ -358,7 +403,6 @@ export default function EquipmentsPage() {
   };
 
   const handleDownloadTemplate = () => {
-    // Tambahin kolom baru LINK GDRIVE di Excel
     const templateData = [{
       "ALAT": "CONTOH ALAT (WAJIB)", "LOKASI": "Gedung A",
       "NOMOR IZIN": "Cth: 123/IZIN/2025", "NOMOR SERIE": "Cth: SN-001",
@@ -540,6 +584,29 @@ export default function EquipmentsPage() {
     (eqPage - 1) * eqPerPage,
     eqPage * eqPerPage
   );
+
+  // ── Derived: Bulk Links (Tampil di Modal) ──
+  const targetEquipments = selectedEqIds.length > 0 
+    ? equipments.filter(eq => selectedEqIds.includes(eq.id))
+    : equipments;
+
+  const linkMap = new Map<string, { url: string, period: string, count: number }>();
+  targetEquipments.forEach(eq => {
+    const allDocs = [...(eq.suket || []), ...(eq.laporan || [])];
+    const eqLinkUrls = new Set<string>(); // Biar 1 alat gak dihitung 2x buat link yang sama
+    allDocs.forEach(d => {
+      if (isCloudLink(d.fileUrl, (d as any).documentType)) {
+        if (!eqLinkUrls.has(d.fileUrl)) {
+          eqLinkUrls.add(d.fileUrl);
+          if (!linkMap.has(d.fileUrl)) {
+            linkMap.set(d.fileUrl, { url: d.fileUrl, period: d.period || "Master Link", count: 0 });
+          }
+          linkMap.get(d.fileUrl)!.count += 1;
+        }
+      }
+    });
+  });
+  const existingBulkLinks = Array.from(linkMap.values());
 
   // ── Form fields reusable ──
   const renderFormFields = (
@@ -863,7 +930,7 @@ export default function EquipmentsPage() {
                       </button>
                       <button className="eq-tool-btn green" onClick={() => handleAdminNotify('ready')} disabled={!selectedCompanyId || isNotifyingBulkAll}>
                         {isNotifyingBulkAll ? <Loader2 size={13} className="eq-spinner" /> : <FileCheck size={13} />}
-                        {selectedEqIds.length > 0 ? `Notif ${selectedEqIds.length} Dokumen` : "Notif Dokumen"}
+                        {selectedEqIds.length > 0 ? `Notif ${selectedEqIds.length} Dokumen` : "Notif Dok Ready"}
                       </button>
 
                       {/* --- TOMBOL BULK ACTION --- */}
@@ -1109,31 +1176,84 @@ export default function EquipmentsPage() {
         </div>
       )}
 
-      {/* ── MODAL BULK LINK MASTER ── */}
+      {/* ── MODAL BULK LINK MASTER (DENGAN HISTORY & DELETE) ── */}
       {isBulkLinkModalOpen && (
         <div className="modal-overlay" onClick={(e) => { if (e.target === e.currentTarget && !isBulkLinkLoading) setIsBulkLinkModalOpen(false); }}>
-          <div className="modal-content" style={{ maxWidth: 400 }}>
-            <h3 className="modal-title">Bulk Link Master GDrive</h3>
-            <p className="modal-subtitle">Terapkan satu link cloud ini ke seluruh alat di PT yang dipilih secara massal.</p>
-            
-            <form onSubmit={handleBulkLinkAllSubmit} style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+          <div className="modal-content" style={{ maxWidth: 460 }}>
+            <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 20 }}>
+              <div>
+                <h3 className="modal-title">Kelola Link Cloud Massal</h3>
+                <p className="modal-subtitle" style={{ color: selectedEqIds.length > 0 ? "#C87A00" : "#1A1A1A", fontWeight: selectedEqIds.length > 0 ? 600 : 400, margin: 0 }}>
+                  {selectedEqIds.length > 0 
+                    ? `Menampilkan link untuk ${selectedEqIds.length} alat terpilih.` 
+                    : "Menampilkan link untuk SELURUH alat di PT ini."}
+                </p>
+              </div>
+              <button onClick={() => setIsBulkLinkModalOpen(false)} style={{ padding: 6, background: "#F5F3EE", border: "none", borderRadius: 8, cursor: "pointer", color: "#1A1A1A" }}>
+                <X size={16} />
+              </button>
+            </div>
+
+            {/* DAFTAR LINK YANG SUDAH ADA */}
+            <div style={{ marginBottom: 24 }}>
+              <p style={{ fontSize: 11, fontWeight: 700, color: "#AAAAAA", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 10 }}>Link Tersedia</p>
+              
+              {existingBulkLinks.length === 0 ? (
+                <div style={{ textAlign: "center", padding: "16px", background: "#FAFAF7", border: "1.5px dashed #EAE7DF", borderRadius: 10, color: "#AAAAAA", fontSize: 12 }}>
+                  Belum ada link cloud untuk alat-alat ini.
+                </div>
+              ) : (
+                <div style={{ display: "flex", flexDirection: "column", gap: 8, maxHeight: 180, overflowY: "auto", paddingRight: 4 }}>
+                  {existingBulkLinks.map((item, idx) => (
+                    <div key={idx} style={{ background: deletingBulkUrl === item.url ? "rgba(220,60,60,0.03)" : "#FAFAF7", border: "1.5px solid", borderColor: deletingBulkUrl === item.url ? "rgba(220,60,60,0.2)" : "#EAE7DF", borderRadius: 10, padding: "10px 12px", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12 }}>
+                      <div style={{ overflow: "hidden" }}>
+                        <p style={{ fontSize: 12, fontWeight: 700, color: "#1A1A1A", margin: "0 0 2px 0" }}>
+                          {item.period} <span style={{ fontSize: 10, color: "#AAAAAA", fontWeight: 500 }}>(ada di {item.count} alat)</span>
+                        </p>
+                        <a href={item.url} target="_blank" rel="noreferrer" style={{ fontSize: 11, color: "#3B82F6", textDecoration: "underline", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", display: "block" }}>
+                          {item.url}
+                        </a>
+                      </div>
+                      <button onClick={() => handleDeleteBulkLink(item.url)} disabled={deletingBulkUrl === item.url} style={{ background: "transparent", border: "none", color: "#DC3C3C", cursor: deletingBulkUrl === item.url ? "wait" : "pointer", padding: 4 }} title="Hapus Link">
+                        {deletingBulkUrl === item.url ? <Loader2 size={14} style={{ animation: "spin 1s linear infinite" }} /> : <Trash2 size={14} />}
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div style={{ height: 1, background: "#EAE7DF", marginBottom: 20 }} />
+
+            {/* FORM TAMBAH LINK BARU */}
+            <p style={{ fontSize: 11, fontWeight: 700, color: "#AAAAAA", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 10 }}>Tambah Link Baru</p>
+            <form onSubmit={handleBulkLinkAllSubmit} style={{ display: "flex", flexDirection: "column", gap: 14, background: "#FAFAF7", padding: 16, border: "1.5px solid #EAE7DF", borderRadius: 12 }}>
+              
+              <div>
+                <label className="modal-label">Nama / Periode Link <span style={{ color: "#DC3C3C" }}>*</span></label>
+                <input 
+                  type="text" required style={inputStyle} placeholder="Cth: Dokumen Master 2026" 
+                  value={bulkLinkData.period} 
+                  onChange={(e) => setBulkLinkData({...bulkLinkData, period: e.target.value})}
+                  disabled={isBulkLinkLoading}
+                />
+              </div>
+
               <div>
                 <label className="modal-label">URL Google Drive <span style={{ color: "#DC3C3C" }}>*</span></label>
                 <input 
                   type="url" required style={inputStyle} placeholder="https://drive.google.com/..." 
                   value={bulkLinkData.url} 
-                  onChange={(e) => setBulkLinkData({ url: e.target.value })}
+                  onChange={(e) => setBulkLinkData({...bulkLinkData, url: e.target.value})}
                   disabled={isBulkLinkLoading}
                 />
               </div>
 
-              <div style={{ display: "flex", gap: 10, marginTop: 12 }}>
-                <button type="button" className="modal-btn-cancel" onClick={() => setIsBulkLinkModalOpen(false)} disabled={isBulkLinkLoading}>Batal</button>
-                <button type="submit" className="modal-btn-submit" disabled={isBulkLinkLoading}>
-                  {isBulkLinkLoading ? <Loader2 size={14} className="eq-spinner" /> : <><CheckCircle2 size={14} /> Terapkan ke Semua</>}
-                </button>
-              </div>
+              <button type="submit" style={{ padding: "10px 16px", background: "#F0A500", border: "none", borderRadius: 10, fontFamily: "inherit", fontSize: 13, fontWeight: 600, color: "#1A1A1A", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 6, transition: "0.2s", boxShadow: "0 4px 14px rgba(240,165,0,0.2)", marginTop: 4 }} disabled={isBulkLinkLoading}>
+                {isBulkLinkLoading ? <Loader2 size={14} className="eq-spinner" /> : <><Plus size={14} /> Tambahkan ke Alat</>}
+              </button>
             </form>
+
           </div>
         </div>
       )}
