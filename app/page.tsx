@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, FormEvent } from "react";
+import { useRouter } from "next/navigation"; // ✅ UPDATE: Tambah untuk navigasi Next.js
 import { Loader2, X, Mail, CheckCircle2, AlertCircle } from "lucide-react"; // Nambah icon pendukung
 
 const EyeIcon = ({ className }: { className?: string }) => (
@@ -18,6 +19,7 @@ const StatCard = ({ value, label }: { value: string; label: string }) => (
 );
 
 export default function LoginPage() {
+  const router = useRouter(); // ✅ UPDATE: Inisialisasi router
   const [email, setEmail]               = useState("");
   const [password, setPassword]         = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -42,9 +44,13 @@ export default function LoginPage() {
       });
       const data = await response.json();
       if (!response.ok) throw new Error(data.message || "Kredensial tidak valid");
-      localStorage.setItem("authToken", data.token);
+      
+      // ✅ UPDATE: Token sudah ada di HttpOnly Cookie, jadi simpan profile saja
       localStorage.setItem("userProfile", JSON.stringify(data.user));
-      window.location.href = "/dashboard";
+      
+      // ✅ UPDATE: Gunakan router push agar session terbaca oleh middleware di VPS
+      router.refresh();
+      router.push("/dashboard");
     } catch (err: any) {
       setError(err.message);
       setIsLoading(false);
@@ -355,7 +361,7 @@ export default function LoginPage() {
               </p>
               <div className="version-badge">
                 <span className="version-badge-dot" />
-                M-Track v2.4.1 · Secure Connection
+               MARIS Enterprise · All Rights Reserved by SYK.
               </div>
             </div>
 
